@@ -179,7 +179,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 .join(',')}`;
         }
         if (where?.length) {
-            q += ` WHERE ${where}`;
+            q += ` WHERE (${where})`;
         }
         if (!isNil(limit)) {
             q += ` LIMIT ${limit}`;
