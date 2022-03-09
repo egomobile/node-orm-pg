@@ -390,6 +390,10 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 (columName) => !idCols.includes(columName) && !isNil((entity as any)[columName]),
             );
 
+            if (!valueCols.length) {
+                continue;  // nothing to do
+            }
+
             const addValuesTo = (cols: string[], vals: any[]) => {
                 for (const c of cols) {
                     const v = (entity as any)[c];
