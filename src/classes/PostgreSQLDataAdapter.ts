@@ -387,8 +387,12 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const table = this.getTableNameByTypeOrThrow(type);
             const idCols = this.getTableIdsByTypeOrThrow(type);
             const valueCols = Object.keys(entity as any).filter(
-                (columName) => !idCols.includes(columName),
+                (columName) => !idCols.includes(columName) && !isNil((entity as any)[columName]),
             );
+
+            if (!valueCols.length) {
+                continue;  // nothing to do
+            }
 
             const addValuesTo = (cols: string[], vals: any[]) => {
                 for (const c of cols) {
