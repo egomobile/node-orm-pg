@@ -160,10 +160,10 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             }
         }
 
-        const skip = options?.skip;
-        if (!isNil(skip)) {
-            if (typeof skip !== 'number') {
-                throw new TypeError('options.skip must be a number');
+        const offset = options?.offset;
+        if (!isNil(offset)) {
+            if (typeof offset !== 'number') {
+                throw new TypeError('options.offset must be a number');
             }
         }
 
@@ -184,8 +184,8 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         if (!isNil(limit)) {
             q += ` LIMIT ${limit}`;
         }
-        if (!isNil(skip)) {
-            q += ` OFFSET ${skip}`;
+        if (!isNil(offset)) {
+            q += ` OFFSET ${offset}`;
         }
         q += ';';
 
