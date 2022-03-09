@@ -173,13 +173,13 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
         // build query
         let q = `SELECT ${projection} FROM ${table}`;
+        if (where?.length) {
+            q += ` WHERE (${where})`;
+        }
         if (sort) {
             q += ` ORDER BY ${Object.entries(sort)
                 .map((entry) => `"${entry[0]}" ${entry[1]}`)
                 .join(',')}`;
-        }
-        if (where?.length) {
-            q += ` WHERE (${where})`;
         }
         if (!isNil(limit)) {
             q += ` LIMIT ${limit}`;
