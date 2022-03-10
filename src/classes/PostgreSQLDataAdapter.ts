@@ -319,7 +319,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             await this.query(
                 `INSERT INTO ${table} (${columnList}) VALUES (${valueList});`,
-                values,
+                ...values,
             );
         }
     }
@@ -369,7 +369,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             // build and run query
             await this.query(
                 `DELETE FROM ${table} WHERE (${where});`,
-                idValues,
+                ...idValues,
             );
         }
     }
@@ -421,7 +421,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             // now build and run query
             await this.query(
                 `UPDATE ${table} SET ${set} WHERE (${where});`,
-                [...values, ...idValues],
+                ...[...values, ...idValues],
             );
         }
     }

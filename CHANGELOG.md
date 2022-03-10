@@ -1,8 +1,9 @@
 # Change Log (@egomobile/orm-pg)
 
-## 0.3.1
+## 0.3.2
 
 - improve [update() method](https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html#update)
+- (bug-)fixes
 
 ## 0.2.1
 
