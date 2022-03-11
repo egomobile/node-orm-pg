@@ -1,3 +1,5 @@
+/* eslint-disable unicorn/filename-case */
+
 // This file is part of the @egomobile/orm-pg distribution.
 // Copyright (c) Next.e.GO Mobile SE, Aachen, Germany (https://e-go-mobile.com/)
 //
@@ -13,6 +15,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-export * from './types';
-export * from './classes';
-export * from './utils';
+import { IEntityConfig } from '@egomobile/orm';
+
+export class Migrations {
+    public id: string | null = null;
+
+    public name: string | null = null;
+
+    public timestamp: number | null = null;
+}
+
+const config: IEntityConfig = {
+    type: Migrations
+};
+
+export default config;

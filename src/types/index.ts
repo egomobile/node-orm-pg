@@ -13,7 +13,66 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import type { IDataContext } from '@egomobile/orm';
 import { Client, Pool } from 'pg';
+import type { PostgreSQLDataAdapter } from '../classes';
+
+/**
+ * Information, which can be used to create a new migration file.
+ */
+export interface INewMigrationInfo {
+    /**
+     * The sanitized base (file-)name without extension.
+     */
+    filename: string;
+    /**
+     * The name.
+     */
+    name: string;
+    /**
+     * The timestamp.
+     */
+    timestamp: number;
+}
+
+/**
+ * A migration for a PostgreSQL database.
+ */
+export interface IPostgreSQLMigration {
+    /**
+     * The underlying module.
+     */
+    module: IPostgreSQLMigrationModule;
+    /**
+     * The name.
+     */
+    name: string;
+    /**
+     * The UNIX timestamp in ms.
+     */
+    timestamp: number;
+}
+
+/**
+ * A migration module.
+ */
+export interface IPostgreSQLMigrationModule {
+    /**
+     * The function to DOWNgrade a database.
+     *
+     * @param {PostgreSQLDataAdapter} adapter The underlying adapter.
+     * @param {IDataContext} context The underlying database context.
+     */
+    down(adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any>;
+
+    /**
+     * The function to UPgrade a database.
+     *
+     * @param {PostgreSQLDataAdapter} adapter The underlying adapter.
+     * @param {IDataContext} context The underlying database context.
+     */
+    up(adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any>;
+}
 
 /**
  * An instance, which can be used as client.
