@@ -32,11 +32,11 @@ export interface ICreateNewMigrationOptions {
     /**
      * Custom footer.
      */
-    footer?: Nilable<string>;
+    footer?: Nilable<string | MigrationFileStringBuilder>;
     /**
      * Custom header.
      */
-    header?: Nilable<string>;
+    header?: Nilable<string | MigrationFileStringBuilder>;
     /**
      * Overwrite if file exist or not.
      */
@@ -48,12 +48,55 @@ export interface ICreateNewMigrationOptions {
 }
 
 /**
+ * A context for a 'MigrationFileStringBuilder' function.
+ */
+export interface IMigrationFileStringBuilderContext {
+    /**
+     * The output directory.
+     */
+    dir: string;
+    /**
+     * The extension.
+     */
+    extension: string;
+    /**
+     * The filename without extension.
+     */
+    filename: string;
+    /**
+     * The name of the migration.
+     */
+    name: string;
+    /**
+     * The UNIX timestamp.
+     */
+    timestamp: number;
+    /**
+     * The type.
+     */
+    type: MigrationFileStringBuilderContextType;
+}
+
+export type MigrationFileStringBuilderContextType = 'footer' | 'header';
+
+/**
+ * A function, which create a string for a migration file.
+ *
+ * @param {IMigrationFileStringBuilderContext} context The underlying context.
+ *
+ * @returns {any} The value to stringify. (null) and (undefined) will become empty strings.
+ */
+export type MigrationFileStringBuilder = (context: IMigrationFileStringBuilderContext) => any;
+
+/**
  * Creates a new migration file.
  *
  * @param {string} name The name of the new file.
  * @param {Nilable<ICreateNewMigrationOptions>} [options] Custom options.
+ *
+ * @returns {Promise<string>} The promise with the full path of the new file.
  */
-export async function createNewMigrationFile(name: string, options?: Nilable<ICreateNewMigrationOptions>) {
+export async function createNewMigrationFile(name: string, options?: Nilable<ICreateNewMigrationOptions>): Promise<string> {
     const { dir, extension, info, source } = getOptionsForCreateNewMigrationOrThrow(name, options);
 
     const fullPath = path.join(dir, info.filename + extension);
@@ -64,6 +107,8 @@ export async function createNewMigrationFile(name: string, options?: Nilable<ICr
     }
 
     await fs.promises.writeFile(fullPath, source, 'utf8');
+
+    return fullPath;
 }
 
 /**
@@ -71,8 +116,10 @@ export async function createNewMigrationFile(name: string, options?: Nilable<ICr
  *
  * @param {string} name The name of the new file.
  * @param {Nilable<ICreateNewMigrationOptions>} [options] Custom options.
+ *
+ * @returns {string} The full path of the new file.
  */
-export function createNewMigrationFileSync(name: string, options?: Nilable<ICreateNewMigrationOptions>) {
+export function createNewMigrationFileSync(name: string, options?: Nilable<ICreateNewMigrationOptions>): string {
     const { dir, extension, info, source } = getOptionsForCreateNewMigrationOrThrow(name, options);
 
     const fullPath = path.join(dir, info.filename + extension);
@@ -83,6 +130,8 @@ export function createNewMigrationFileSync(name: string, options?: Nilable<ICrea
     }
 
     fs.writeFileSync(fullPath, source, 'utf8');
+
+    return fullPath;
 }
 
 /**
@@ -109,13 +158,15 @@ export function createNewMigrationInfo(name: string): INewMigrationInfo {
 }
 
 function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<ICreateNewMigrationOptions>) {
-    let dir: Nilable<string>;
-
     if (!isNil(options)) {
         if (typeof options !== 'object') {
             throw new TypeError('options must be of type object');
         }
     }
+
+    let dir: Nilable<string>;
+    let footerBuilder: MigrationFileStringBuilder;
+    let headerBuilder: MigrationFileStringBuilder;
 
     dir = options?.dir;
     if (isNil(dir)) {
@@ -126,15 +177,27 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
         }
     }
 
-    if (!isNil(options?.footer)) {
-        if (typeof options?.footer !== 'string') {
-            throw new TypeError('options.footer must be of type string');
+    if (isNil(options?.footer)) {
+        footerBuilder = () => '';
+    } else {
+        if (typeof options!.footer === 'string') {
+            footerBuilder = () => options!.footer;
+        } else if (typeof options!.footer === 'function') {
+            footerBuilder = options!.footer;
+        } else {
+            throw new TypeError('options.footer must be of type string or function');
         }
     }
 
-    if (!isNil(options?.header)) {
-        if (typeof options?.header !== 'string') {
-            throw new TypeError('options.header must be of type string');
+    if (isNil(options?.header)) {
+        headerBuilder = () => '';
+    } else {
+        if (typeof options!.header === 'string') {
+            headerBuilder = () => options!.header;
+        } else if (typeof options!.header === 'function') {
+            headerBuilder = options!.header;
+        } else {
+            throw new TypeError('options.header must be of type string or function');
         }
     }
 
@@ -142,9 +205,26 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
         dir = path.join(process.cwd(), dir);
     }
 
+    const info = createNewMigrationInfo(name);
+    const extension = options?.typescript ? '.ts' : '.js';
+
+    const getStringBuilderValue = (type: MigrationFileStringBuilderContextType, func: MigrationFileStringBuilder) => {
+        const context: IMigrationFileStringBuilderContext = {
+            dir: dir!,
+            extension,
+            filename: info.filename,
+            name: info.name,
+            timestamp: info.timestamp,
+            type
+        };
+
+        const val = func(context);
+        return isNil(val) ? '' : String(val);
+    };
+
     let source: string;
     if (options?.typescript) {
-        source = `${options?.header || ''}import type { IDataContext } from '@egomobile/orm';
+        source = `${getStringBuilderValue('header', headerBuilder)}import type { IDataContext } from '@egomobile/orm';
 
 /**
  * Function to UP-GRADE the database.
@@ -167,9 +247,9 @@ export const down = async (context: IDataContext): Promise<any> => {
 
     throw new Error('down() not implemented!');
 };
-${options?.footer || ''}`;
+${getStringBuilderValue('footer', footerBuilder)}`;
     } else {
-        source = `${options?.header || ''}/**
+        source = `${getStringBuilderValue('header', headerBuilder)}/**
  * Function to UP-GRADE the database.
  *
  * @param {IDataContext} context The current data context.
@@ -190,13 +270,13 @@ module.exports.down = async (context) => {
 
     throw new Error('down() not implemented!');
 };
-${options?.footer || ''}`;
+${getStringBuilderValue('footer', footerBuilder)}`;
     }
 
     return {
         dir,
-        extension: options?.typescript ? '.ts' : '.js',
-        info: createNewMigrationInfo(name),
+        extension,
+        info,
         source
     };
 }
