@@ -126,10 +126,10 @@ async function main() {
   });
 
   // UP-GRADE database
-  await x.up();
+  await context.up();
 
   // DOWN-GRADE database
-  await x.down();
+  await context.down();
 }
 
 main().catch(console.error);
