@@ -186,9 +186,7 @@ export class PostgreSQLMigrationContext {
 
             loadedMigrations = [];
 
-            const rootDir = path.join(__dirname, 'script');
-
-            const filesAndFolders = await fs.promises.readdir(rootDir);
+            const filesAndFolders = await fs.promises.readdir(migrations);
 
             for (const item of filesAndFolders) {
                 const rx = this.options.typescript ?
@@ -200,7 +198,7 @@ export class PostgreSQLMigrationContext {
                     continue;
                 }
 
-                const fullPath = path.join(rootDir, item);
+                const fullPath = path.join(migrations, item);
 
                 const stat = await fs.promises.stat(fullPath);
                 if (stat.isFile()) {
