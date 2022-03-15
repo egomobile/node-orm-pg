@@ -24,10 +24,11 @@ The following modules are defined in [peerDependencies](https://nodejs.org/uk/bl
 ```typescript
 import { createDataContext } from "@egomobile/orm";
 import { PostgreSQLDataAdapter } from "@egomobile/orm-pg";
+import type { QueryResult } from "pg";
 import { User } from "./data/entities";
 
 async function main() {
-  const context = createDataContext({
+  const context = await createDataContext({
     adapter: new PostgreSQLDataAdapter(),
     entities: {
       // name of the entity / table
@@ -39,8 +40,7 @@ async function main() {
   });
 
   const listOfUsers: User[] = await context.find(User, {
-    // the following both settings depend on the underlying
-    // data adapter
+    // WHERE clause
     where: "is_active=$1 AND is_deleted=$2",
     params: [true, false], // $1, $2
 
@@ -74,9 +74,8 @@ newUser.last_name = "Doe";
 // ... and add it to database
 await context.insert(newUser);
 
-// depending on data adapter, it might be
-// possible to do raw queries
-const result: any = await context.query(
+// do raw queries
+const result: QueryResult<any> = await context.query(
   "SELECT * FROM users WHERE id=$1 AND is_active=$2;",
   23979,
   true
@@ -114,7 +113,7 @@ async function main() {
     adapter: new PostgreSQLDataAdapter(),
 
     // scan for .js files
-    // inside ./migrations subfolder
+    // inside ./migration subfolder
     // with the following format:
     //
     // <UNIX-TIMESTAMP>-<NAME-OF-THE-MIGRATION>.js
@@ -164,7 +163,7 @@ WITH (
 };
 
 /**
- * Function to UP-GRADE the database.
+ * Function to DOWN-GRADE the database.
  */
 module.exports.down = async (context) => {
   // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
