@@ -1,6 +1,6 @@
 # Change Log (@egomobile/orm-pg)
 
-## 0.4.0
+## 0.4.2
 
 - implement migration classes and helpers
 

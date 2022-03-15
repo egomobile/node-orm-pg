@@ -1,6 +1,6 @@
 {
   "name": "@egomobile/orm-pg",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A PostgreSQL data adapter and other utilities for @egomobile/orm module.",
   "main": "lib/index.js",
   "engines": {

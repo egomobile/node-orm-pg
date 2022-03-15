@@ -22,10 +22,19 @@ The following modules are defined in [peerDependencies](https://nodejs.org/uk/bl
 ## Usage
 
 ```typescript
-import { createDataContext } from "@egomobile/orm";
+import { createDataContext, DbNullable, NULL as DbNull } from "@egomobile/orm";
 import { PostgreSQLDataAdapter } from "@egomobile/orm-pg";
 import type { QueryResult } from "pg";
-import { User } from "./data/entities";
+
+class User {
+  // non-nullable fields
+  public id: number | null = null;
+  public first_name: string | null = null;
+  public last_name: string | null = null;
+
+  // nullable fields
+  public email: DbNullable<string | null> = null;
+}
 
 async function main() {
   const context = await createDataContext({
@@ -58,6 +67,7 @@ async function main() {
     // update with new data
     specificUser.last_name = "Doe";
     specificUser.first_name = "Jane";
+    specificUser.email = DbNull;
     await context.update(specificUser);
 
     // remove from database
