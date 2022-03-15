@@ -228,7 +228,7 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
 
 /**
  * Function to UP-GRADE the database.
- * 
+ *
  * @param {IDataContext} context The current data context.
  */
 export const up = async (context: IDataContext): Promise<any> => {
@@ -239,7 +239,7 @@ export const up = async (context: IDataContext): Promise<any> => {
 
 /**
  * Function to DOWN-GRADE the database.
- * 
+ *
  * @param {IDataContext} context The current data context.
  */
 export const down = async (context: IDataContext): Promise<any> => {
@@ -262,7 +262,7 @@ module.exports.up = async (context) => {
 
 /**
  * Function to DOWN-GRADE the database.
- * 
+ *
  * @param {IDataContext} context The current data context.
  */
 module.exports.down = async (context) => {
