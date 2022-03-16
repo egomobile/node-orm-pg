@@ -188,7 +188,7 @@ export class PostgreSQLMigrationContext {
             executeMigration: async ({ adapter, context, existingMigration, migration }) => {
                 if (existingMigration) {
                     await Promise.resolve(
-                        migration.module.down(adapter, context)
+                        migration.module.down(adapter, context, this.debug)
                     );
 
                     await context.remove(existingMigration);
@@ -344,7 +344,7 @@ export class PostgreSQLMigrationContext {
                     this.debug(`Skipping upgrade ${existingMigration.name} (${existingMigration.timestamp}) ...`, 'ℹ️');
                 } else {
                     await Promise.resolve(
-                        migration.module.up(adapter, context)
+                        migration.module.up(adapter, context, this.debug)
                     );
 
                     const newMigration = new Migrations();

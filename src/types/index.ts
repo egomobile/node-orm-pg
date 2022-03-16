@@ -14,6 +14,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import type { IDataContext } from '@egomobile/orm';
+import { Nilable } from '@egomobile/orm/lib/types/internal';
 import { Client, Pool } from 'pg';
 import type { PostgreSQLDataAdapter } from '../classes';
 
@@ -22,9 +23,9 @@ import type { PostgreSQLDataAdapter } from '../classes';
  *
  * @param {string} message The message text.
  * @param {string} icon The icon.
- * @param {string} source The name of the source.
+ * @param {Nilable<string>} [source] The name of the optional source.
  */
-export type DebugAction = (message: string, icon: DebugIcon, source: string) => any;
+export type DebugAction = (message: string, icon: DebugIcon, source?: Nilable<string>) => any;
 
 /**
  * A possible value for a known debug icon.
@@ -83,7 +84,7 @@ export interface IPostgreSQLMigrationModule {
      * @param {PostgreSQLDataAdapter} adapter The underlying adapter.
      * @param {IDataContext} context The underlying database context.
      */
-    down(adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any>;
+    down: MigrationAction;
 
     /**
      * The function to UPgrade a database.
@@ -91,8 +92,17 @@ export interface IPostgreSQLMigrationModule {
      * @param {PostgreSQLDataAdapter} adapter The underlying adapter.
      * @param {IDataContext} context The underlying database context.
      */
-    up(adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any>;
+    up: MigrationAction;
 }
+
+/**
+ * A migation action.
+ *
+ * @param {PostgreSQLDataAdapter} adapter The underlying adapter.
+ * @param {IDataContext} context The underlying database context.
+ * @param {DebugAction} debug The debug action.
+ */
+export type MigrationAction = (adapter: PostgreSQLDataAdapter, context: IDataContext, debug: DebugAction) => Promise<any>;
 
 /**
  * An instance, which can be used as client.
