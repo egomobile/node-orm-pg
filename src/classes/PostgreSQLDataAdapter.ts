@@ -333,15 +333,16 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             if (idCols.length) {
                 const row: Record<string, any> = queryResult.rows[0];
 
-                const where = Object.keys(row)
-                    .map((columnName, index) => `"${columnName}"=$${index + 1} `)
+                // WHERE clause for getting new, inserted entity
+                const whereInserted = Object.keys(row)
+                    .map((columnName, index) => `"${columnName}"=$${index + 1}`)
                     .join(' AND ');
                 const params = Object.values(row);
 
-                // get new row as entity with updated data
+                // get new row as entity with new and updated data
                 result.push(
                     await this.findOne(type, {
-                        where,
+                        where: whereInserted,
                         params
                     })
                 );
@@ -447,14 +448,14 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const values: any[] = [];
             addValuesTo(valueCols, values);
             const set = valueCols
-                .map((columnName) => `"${columnName}" = $${++i} `)
+                .map((columnName) => `"${columnName}" = $${++i}`)
                 .join(',');
 
             // WHERE clause
             const idValues: any[] = [];
             addValuesTo(idCols, idValues);
             const where = idCols
-                .map((columnName) => `"${columnName}" = $${++i} `)
+                .map((columnName) => `"${columnName}" = $${++i}`)
                 .join(' AND ');
 
             // now build and run query
@@ -463,10 +464,15 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 ...[...values, ...idValues],
             );
 
+            // WHERE clause for getting updated entity
+            const whereUpdated = idCols
+                .map((columnName, index) => `"${columnName}" = $${index + 1}`)
+                .join(' AND ');
+
             // get updated entity
             result.push(
                 await this.findOne(type, {
-                    where,
+                    where: whereUpdated,
                     params: idValues
                 })
             );
