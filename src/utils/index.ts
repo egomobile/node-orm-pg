@@ -224,14 +224,16 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
 
     let source: string;
     if (options?.typescript) {
-        source = `${getStringBuilderValue('header', headerBuilder)}import type { IDataContext } from '@egomobile/orm';
+        source = `${getStringBuilderValue('header', headerBuilder)}import type { IDataContext, PostgreSQLDataAdapter } from '@egomobile/orm';
 
 /**
  * Function to UP-GRADE the database.
  *
+ * @param {PostgreSQLDataAdapter} adapter The current data adapter.
  * @param {IDataContext} context The current data context.
  */
-export const up = async (context: IDataContext): Promise<any> => {
+export const up = async (adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any> => {
+    // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
 
     throw new Error('up() not implemented!');
@@ -240,9 +242,11 @@ export const up = async (context: IDataContext): Promise<any> => {
 /**
  * Function to DOWN-GRADE the database.
  *
+ * @param {PostgreSQLDataAdapter} adapter The current data adapter.
  * @param {IDataContext} context The current data context.
  */
-export const down = async (context: IDataContext): Promise<any> => {
+export const down = async (adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any> => {
+    // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
 
     throw new Error('down() not implemented!');
@@ -252,9 +256,11 @@ ${getStringBuilderValue('footer', footerBuilder)}`;
         source = `${getStringBuilderValue('header', headerBuilder)}/**
  * Function to UP-GRADE the database.
  *
+ * @param {PostgreSQLDataAdapter} adapter The current data adapter.
  * @param {IDataContext} context The current data context.
  */
-module.exports.up = async (context) => {
+module.exports.up = async (adapter, context) => {
+    // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
 
     throw new Error('up() not implemented!');
@@ -263,9 +269,11 @@ module.exports.up = async (context) => {
 /**
  * Function to DOWN-GRADE the database.
  *
+ * @param {PostgreSQLDataAdapter} adapter The current data adapter.
  * @param {IDataContext} context The current data context.
  */
-module.exports.down = async (context) => {
+module.exports.down = async (adapter, context) => {
+    // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
 
     throw new Error('down() not implemented!');
