@@ -295,14 +295,17 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     /**
      * @inheritdoc
      */
-    public async insert<T extends any = any>(entities: T | List<T>): Promise<void> {
+    public async insert<T extends any = any>(entities: T | List<T>): Promise<T[]> {
         if (isNil(entities)) {
             throw new TypeError('entities cannot be (null) or (undefined)');
         }
 
+        const result: T[] = [];
+
         for (const entity of asList(entities)!) {
             const type: Constructor = (entity as any).constructor;
             const table = this.getTableNameByTypeOrThrow(type);
+            const idCols = this.getTableIdsByType(type);
             const valueCols = Object.keys(entity as any).filter(
                 (columName) => !isNil((entity as any)[columName]),
             );
@@ -317,11 +320,38 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const columnList = valueCols.map((c) => `"${c}"`).join(',');
             const valueList = valueCols.map((c, i) => `$${i + 1}`).join(',');
 
-            await this.query(
-                `INSERT INTO ${table} (${columnList}) VALUES (${valueList});`,
+            let returning = '';
+            if (idCols.length) {
+                returning = `RETURNING ${idCols.join(',')}`;
+            }
+
+            const queryResult = await this.query(
+                `INSERT INTO ${table} (${columnList}) VALUES (${valueList})${returning};`,
                 ...values,
             );
+
+            if (idCols.length) {
+                const row: Record<string, any> = queryResult.rows[0];
+
+                const where = Object.keys(row)
+                    .map((columnName, index) => `"${columnName}"=$${index}`)
+                    .join(' AND ');
+                const params = Object.values(row);
+
+                // get new row as entity with updated data
+                result.push(
+                    await this.findOne(type, {
+                        where,
+                        params
+                    })
+                );
+            } else {
+                // no ID column(s), so return simple entity
+                result.push(entity);
+            }
         }
+
+        return result;
     }
 
     /**
@@ -341,10 +371,12 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     /**
      * @inheritdoc
      */
-    public async remove<T extends any = any>(entities: T | List<T>): Promise<void> {
+    public async remove<T extends any = any>(entities: T | List<T>): Promise<T[]> {
         if (isNil(entities)) {
             throw new TypeError('entities cannot be (null) or (undefined)');
         }
+
+        const result: T[] = [];
 
         for (const entity of asList(entities)!) {
             const type: Constructor = (entity as any).constructor;
@@ -371,16 +403,23 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 `DELETE FROM ${table} WHERE (${where});`,
                 ...idValues,
             );
+
+            // simply return entity
+            result.push(entity);
         }
+
+        return result;
     }
 
     /**
      * @inheritdoc
      */
-    public async update<T extends any = any>(entities: T | List<T>): Promise<void> {
+    public async update<T extends any = any>(entities: T | List<T>): Promise<T[]> {
         if (isNil(entities)) {
             throw new TypeError('entities cannot be (null) or (undefined)');
         }
+
+        const result: T[] = [];
 
         for (const entity of asList(entities)!) {
             const type: Constructor = (entity as any).constructor;
@@ -423,7 +462,17 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 `UPDATE ${table} SET ${set} WHERE (${where});`,
                 ...[...values, ...idValues],
             );
+
+            // get updated entity
+            result.push(
+                await this.findOne(type, {
+                    where,
+                    params: idValues
+                })
+            );
         }
+
+        return result;
     }
 }
 
