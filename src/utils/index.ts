@@ -294,10 +294,10 @@ ${getStringBuilderValue('footer', footerBuilder)}`;
 /**
  * Checks if an object is a PostgreSQL client like object.
  *
- * @param {any} obj The object to check.
+ * @param {unknown} obj The object to check.
  *
  * @returns {boolean} Is a PostgreSQL client like object or not.
  */
-export function isPostgreSQLClientLike(obj: any): obj is (Client | Pool) {
+export function isPostgreSQLClientLike(obj: unknown): obj is (Client | Pool) {
     return obj instanceof Client || obj instanceof Pool;
 }
