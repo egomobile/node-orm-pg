@@ -20,6 +20,7 @@ import { pascalCase } from 'change-case';
 import type { INewMigrationInfo } from '../types';
 import { Nilable } from '@egomobile/orm/lib/types/internal';
 import { isNil } from './internal';
+import { Client, Pool } from 'pg';
 
 /**
  * Options for 'createNewMigration()' and 'createNewMigrationSync()' functions.
@@ -288,4 +289,15 @@ ${getStringBuilderValue('footer', footerBuilder)}`;
         info,
         source
     };
+}
+
+/**
+ * Checks if an object is a PostgreSQL client like object.
+ *
+ * @param {any} obj The object to check.
+ *
+ * @returns {boolean} Is a PostgreSQL client like object or not.
+ */
+export function isPostgreSQLClientLike(obj: any): obj is (Client | Pool) {
+    return obj instanceof Client || obj instanceof Pool;
 }

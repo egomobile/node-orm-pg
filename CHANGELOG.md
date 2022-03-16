@@ -1,5 +1,9 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.6.0
+
+- add debugging
+
 ## 0.5.0
 
 - update to `@egomobile/orm^0.5.0`
