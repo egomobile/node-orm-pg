@@ -4,9 +4,10 @@
 
 - add debugging
 
-## 0.5.0
+## 0.5.1
 
 - update to `@egomobile/orm^0.5.0`
+- (bug-)fixes
 
 ## 0.4.6
 
