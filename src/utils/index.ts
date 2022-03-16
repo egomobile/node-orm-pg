@@ -224,7 +224,8 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
 
     let source: string;
     if (options?.typescript) {
-        source = `${getStringBuilderValue('header', headerBuilder)}import type { IDataContext, PostgreSQLDataAdapter } from '@egomobile/orm';
+        source = `${getStringBuilderValue('header', headerBuilder)}import type { IDataContext } from '@egomobile/orm';
+import type { PostgreSQLDataAdapter } from '@egomobile/orm-pg';
 
 /**
  * Function to UP-GRADE the database.
