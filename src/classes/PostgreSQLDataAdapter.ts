@@ -334,7 +334,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 const row: Record<string, any> = queryResult.rows[0];
 
                 const where = Object.keys(row)
-                    .map((columnName, index) => `"${columnName}"=$${index}`)
+                    .map((columnName, index) => `"${columnName}"=$${index + 1} `)
                     .join(' AND ');
                 const params = Object.values(row);
 
@@ -395,12 +395,12 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             // WHERE clause
             const where = idCols
-                .map((columnName) => `"${columnName}"=$${++i}`)
+                .map((columnName) => `"${columnName}" = $${++i} `)
                 .join(' AND ');
 
             // build and run query
             await this.query(
-                `DELETE FROM ${table} WHERE (${where});`,
+                `DELETE FROM ${table} WHERE(${where}); `,
                 ...idValues,
             );
 
@@ -447,19 +447,19 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const values: any[] = [];
             addValuesTo(valueCols, values);
             const set = valueCols
-                .map((columnName) => `"${columnName}"=$${++i}`)
+                .map((columnName) => `"${columnName}" = $${++i} `)
                 .join(',');
 
             // WHERE clause
             const idValues: any[] = [];
             addValuesTo(idCols, idValues);
             const where = idCols
-                .map((columnName) => `"${columnName}"=$${++i}`)
+                .map((columnName) => `"${columnName}" = $${++i} `)
                 .join(' AND ');
 
             // now build and run query
             await this.query(
-                `UPDATE ${table} SET ${set} WHERE (${where});`,
+                `UPDATE ${table} SET ${set} WHERE(${where}); `,
                 ...[...values, ...idValues],
             );
 
