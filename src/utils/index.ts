@@ -20,6 +20,7 @@ import { pascalCase } from 'change-case';
 import type { INewMigrationInfo } from '../types';
 import { Nilable } from '@egomobile/orm/lib/types/internal';
 import { isNil } from './internal';
+import { Client, Pool } from 'pg';
 
 /**
  * Options for 'createNewMigration()' and 'createNewMigrationSync()' functions.
@@ -224,31 +225,26 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
 
     let source: string;
     if (options?.typescript) {
-        source = `${getStringBuilderValue('header', headerBuilder)}import type { IDataContext } from '@egomobile/orm';
-import type { PostgreSQLDataAdapter } from '@egomobile/orm-pg';
+        source = `${getStringBuilderValue('header', headerBuilder)}import type { MigrationAction } from '@egomobile/orm-pg';
 
 /**
- * Function to UP-GRADE the database.
- *
- * @param {PostgreSQLDataAdapter} adapter The current data adapter.
- * @param {IDataContext} context The current data context.
+ * Function to UP-grade the database.
  */
-export const up = async (adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any> => {
+export const up: MigrationAction = async (adapter, context, debug) => {
     // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
+    // debug => https://egomobile.github.io/node-orm-pg/modules.html#DebugAction
 
     throw new Error('up() not implemented!');
 };
 
 /**
- * Function to DOWN-GRADE the database.
- *
- * @param {PostgreSQLDataAdapter} adapter The current data adapter.
- * @param {IDataContext} context The current data context.
+ * Function to DOWN-grade the database.
  */
-export const down = async (adapter: PostgreSQLDataAdapter, context: IDataContext): Promise<any> => {
+export const down: MigrationAction = async (adapter, context, debug) => {
     // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
+    // debug => https://egomobile.github.io/node-orm-pg/modules.html#DebugAction
 
     throw new Error('down() not implemented!');
 };
@@ -259,10 +255,12 @@ ${getStringBuilderValue('footer', footerBuilder)}`;
  *
  * @param {PostgreSQLDataAdapter} adapter The current data adapter.
  * @param {IDataContext} context The current data context.
+ * @param {DebugAction} debug The function, which can be used for debugging.
  */
-module.exports.up = async (adapter, context) => {
+module.exports.up = async (adapter, context, debug) => {
     // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
+    // debug => https://egomobile.github.io/node-orm-pg/modules.html#DebugAction
 
     throw new Error('up() not implemented!');
 };
@@ -272,10 +270,12 @@ module.exports.up = async (adapter, context) => {
  *
  * @param {PostgreSQLDataAdapter} adapter The current data adapter.
  * @param {IDataContext} context The current data context.
+ * @param {DebugAction} debug The function, which can be used for debugging.
  */
-module.exports.down = async (adapter, context) => {
+module.exports.down = async (adapter, context, debug) => {
     // adapter => https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html
     // context => https://egomobile.github.io/node-orm/interfaces/IDataContext.html
+    // debug => https://egomobile.github.io/node-orm-pg/modules.html#DebugAction
 
     throw new Error('down() not implemented!');
 };
@@ -288,4 +288,15 @@ ${getStringBuilderValue('footer', footerBuilder)}`;
         info,
         source
     };
+}
+
+/**
+ * Checks if an object is a PostgreSQL client like object.
+ *
+ * @param {unknown} obj The object to check.
+ *
+ * @returns {boolean} Is a PostgreSQL client like object or not.
+ */
+export function isPostgreSQLClientLike(obj: unknown): obj is (Client | Pool) {
+    return obj instanceof Client || obj instanceof Pool;
 }

@@ -17,11 +17,16 @@
 
 import { DataAdapterBase, IFindOneOptions, IFindOptions } from '@egomobile/orm';
 import type { Constructor, List, Nilable } from '@egomobile/orm/lib/types/internal';
-import { Client, ClientConfig, Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
+import { ClientConfig, Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
 import { isExplicitNull } from '@egomobile/orm';
-import type { PostgreSQLClientLike } from '../types';
-import type { Getter } from '../types/internal';
-import { asList, isNil } from '../utils/internal';
+import type { DebugAction, PostgreSQLClientLike } from '../types';
+import type { DebugActionWithoutSource, Getter } from '../types/internal';
+import { asList, isNil, toDebugActionSafe } from '../utils/internal';
+import { isPostgreSQLClientLike } from '../utils';
+
+interface IToClientGetterOptions {
+    value: Nilable<PostgreSQLClientLike | Getter<PostgreSQLClientLike> | PostgreSQLClientConfig>;
+}
 
 /**
  * Options for 'find()' method of a 'PostgreSQLDataAdapter' instance.
@@ -75,6 +80,10 @@ export interface IPostgreSQLDataAdapterOptions {
      * The underlying client or a function, which returns it.
      */
     client?: Nilable<PostgreSQLClientLike | Getter<PostgreSQLClientLike> | PostgreSQLClientConfig>;
+    /**
+     * The optional debug action / handler.
+     */
+    debug?: Nilable<DebugAction>;
 }
 
 /**
@@ -92,6 +101,7 @@ export type PostgreSQLDataAdapterOptionsValue = IPostgreSQLDataAdapterOptions | 
  */
 export class PostgreSQLDataAdapter extends DataAdapterBase {
     private readonly clientGetter: Getter<PostgreSQLClientLike>;
+    private readonly debug: DebugActionWithoutSource;
 
     /**
      * Initializes a new instance of that class.
@@ -102,7 +112,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         super();
 
         let options: Nilable<IPostgreSQLDataAdapterOptions>;
-        if (optionsOrClient instanceof Client || optionsOrClient instanceof Pool) {
+        if (isPostgreSQLClientLike(optionsOrClient)) {
             options = {
                 client: optionsOrClient
             };
@@ -116,7 +126,10 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             }
         }
 
-        this.clientGetter = toClientGetter(options?.client);
+        this.clientGetter = toClientGetter({
+            value: options?.client
+        });
+        this.debug = toDebugActionSafe('PostgreSQLDataAdapter', options?.debug);
     }
 
     /**
@@ -364,6 +377,8 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      * @returns {Promise<QueryResult<any>>} The promise with the result.
      */
     public async query(sql: string, ...values: any[]): Promise<QueryResult<any>> {
+        this.debug(`SQL QUERY: ${sql}`, '🐞');
+
         const client = await this.getClient();
 
         return client.query(sql, values);
@@ -396,12 +411,12 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             // WHERE clause
             const where = idCols
-                .map((columnName) => `"${columnName}" = $${++i} `)
+                .map((columnName) => `"${columnName}"=$${++i}`)
                 .join(' AND ');
 
             // build and run query
             await this.query(
-                `DELETE FROM ${table} WHERE(${where}); `,
+                `DELETE FROM ${table} WHERE (${where}); `,
                 ...idValues,
             );
 
@@ -448,25 +463,25 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const values: any[] = [];
             addValuesTo(valueCols, values);
             const set = valueCols
-                .map((columnName) => `"${columnName}" = $${++i}`)
+                .map((columnName) => `"${columnName}"=$${++i}`)
                 .join(',');
 
             // WHERE clause
             const idValues: any[] = [];
             addValuesTo(idCols, idValues);
             const where = idCols
-                .map((columnName) => `"${columnName}" = $${++i}`)
+                .map((columnName) => `"${columnName}"=$${++i}`)
                 .join(' AND ');
 
             // now build and run query
             await this.query(
-                `UPDATE ${table} SET ${set} WHERE(${where}); `,
+                `UPDATE ${table} SET ${set} WHERE (${where}); `,
                 ...[...values, ...idValues],
             );
 
             // WHERE clause for getting updated entity
             const whereUpdated = idCols
-                .map((columnName, index) => `"${columnName}" = $${index + 1}`)
+                .map((columnName, index) => `"${columnName}"=$${index + 1}`)
                 .join(' AND ');
 
             // get updated entity
@@ -482,10 +497,12 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     }
 }
 
-function toClientGetter(value: Nilable<PostgreSQLClientLike | Getter<PostgreSQLClientLike> | PostgreSQLClientConfig>): Getter<PostgreSQLClientLike> {
+function toClientGetter(
+    { value }: IToClientGetterOptions
+): Getter<PostgreSQLClientLike> {
     if (typeof value === 'function') {
         return value;
-    } else if (value instanceof Client || value instanceof Pool) {
+    } else if (isPostgreSQLClientLike(value)) {
         return async () => value;
     } else if (isNil(value) || typeof value === 'object') {
         const pool = new Pool(value as PoolConfig || undefined);

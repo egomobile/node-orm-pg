@@ -21,9 +21,10 @@ import MigrationsEntity, { Migrations } from './pocos/Migrations';
 import type { Nilable } from '@egomobile/orm/lib/types/internal';
 import type { PostgreSQLDataAdapter, PostgreSQLDataAdapterOptionsValue } from './PostgreSQLDataAdapter';
 import { createDataContext, EntityConfigurations, IDataAdapter, IDataContext } from '@egomobile/orm';
-import type { Getter } from '../types/internal';
-import { IPostgreSQLMigration } from '../types';
-import { isNil } from '../utils/internal';
+import type { DebugActionWithoutSource, Getter } from '../types/internal';
+import { DebugAction, IPostgreSQLMigration } from '../types';
+import { isNil, toDebugActionSafe } from '../utils/internal';
+import { isPostgreSQLClientLike } from '../utils';
 
 /**
  * Options for 'down()' method of a 'PostgreSQLMigrationContext' instance.
@@ -43,6 +44,10 @@ export interface IPostgreSQLMigrationContextOptions {
      * Custom options for the adapter.
      */
     adapter?: Nilable<PostgreSQLDataAdapterOptionsValue>;
+    /**
+     * The optional debug action / handler.
+     */
+    debug?: Nilable<DebugAction>;
     /**
      * Migrations to use.
      *
@@ -73,6 +78,7 @@ interface IRunMigrationContext {
 interface IRunMigrationsOptions {
     executeMigration: (context: IRunMigrationContext) => Promise<void>;
     migrations: IPostgreSQLMigration[];
+    type: string;
 }
 
 /**
@@ -89,6 +95,8 @@ export interface IUpOptions {
  * A PostgreSQL migration context.
  */
 export class PostgreSQLMigrationContext {
+    private readonly debug: DebugActionWithoutSource;
+
     /**
      * Initializes a new instance of that class.
      *
@@ -98,10 +106,19 @@ export class PostgreSQLMigrationContext {
         if (typeof options !== 'object') {
             throw new TypeError('options must be of type object');
         }
+
+        this.debug = toDebugActionSafe('PostgreSQLMigrationContext', options.debug);
     }
 
     private async createContext() {
-        const adapter: IDataAdapter = new (require('./PostgreSQLDataAdapter').PostgreSQLDataAdapter)(this.options?.adapter);
+        const adapterOptions = this.options?.adapter;
+        if (adapterOptions) {
+            if (!isPostgreSQLClientLike(adapterOptions)) {
+                adapterOptions.debug = adapterOptions.debug || this.debug;
+            }
+        }
+
+        const adapter: IDataAdapter = new (require('./PostgreSQLDataAdapter').PostgreSQLDataAdapter)(adapterOptions);
         const entities: EntityConfigurations = {};
 
         let table = this.options.table;
@@ -140,8 +157,16 @@ export class PostgreSQLMigrationContext {
         // sort migrations DESC-ENDING by timestamp
         allMigrations.sort((x, y) => y.timestamp - x.timestamp);
 
+        if (allMigrations.length) {
+            this.debug(`Found ${allMigrations.length} down migration(s) found`, '🐞');
+        } else {
+            this.debug('No down migration(s) found', '⚠️');
+        }
+
         let migrations: IPostgreSQLMigration[];
         if (typeof options?.timestamp === 'number') {
+            this.debug(`Will downgrade to ${options.timestamp} ...`, '🐞');
+
             migrations = [];
 
             for (const m of allMigrations) {
@@ -150,24 +175,31 @@ export class PostgreSQLMigrationContext {
                 }
 
                 migrations.push(m);
+                this.debug(`Will use downgrade script ${m.name} ...`, '🐞');
             }
         } else {
+            this.debug('Will do complete downgrade ...', '🐞');
+
             migrations = allMigrations;
         }
 
         await this.runMigrations({
             migrations,
             executeMigration: async ({ adapter, context, existingMigration, migration }) => {
-                if (!existingMigration) {
-                    return;  // already executed or not available
+                if (existingMigration) {
+                    await Promise.resolve(
+                        migration.module.down(adapter, context, this.debug)
+                    );
+
+                    await context.remove(existingMigration);
+
+                    this.debug(`Downgrade ${existingMigration.name} (${existingMigration.timestamp}) executed`, '✅');
+                } else {
+                    // already executed or not available
+                    this.debug(`Skipping downgrade ${migration.name} (${migration.timestamp}) ...`, 'ℹ️');
                 }
-
-                await Promise.resolve(
-                    migration.module.down(adapter, context)
-                );
-
-                await context.remove(existingMigration);
-            }
+            },
+            type: 'down'
         });
     }
 
@@ -227,12 +259,15 @@ export class PostgreSQLMigrationContext {
         return loadedMigrations;
     }
 
-    private async runMigrations({ executeMigration, migrations }: IRunMigrationsOptions) {
+    private async runMigrations({ executeMigration, migrations, type }: IRunMigrationsOptions) {
         const { adapter, context } = await this.createContext();
+
+        this.debug(`Will execute migrations of type ${type} ...`, 'ℹ️');
 
         await context.query('START TRANSACTION;');
         try {
             const finishedMigrations = await context.find(Migrations);
+            this.debug(`Found ${finishedMigrations.length} finished migrations in database`, '🐞');
 
             for (const m of migrations) {
                 const existingMigration = finishedMigrations.find(
@@ -250,8 +285,10 @@ export class PostgreSQLMigrationContext {
             }
 
             await context.query('COMMIT;');
+            this.debug(`All migrations of type ${type} executed`, '✅');
         } catch (ex) {
             await context.query('ROLLBACK;');
+            this.debug(`Could not execute migrations of type ${type}: ${ex}`, '❌');
 
             throw ex;
         }
@@ -273,18 +310,29 @@ export class PostgreSQLMigrationContext {
         // sort migrations ASC-ENDING by timestamp
         allMigrations.sort((x, y) => x.timestamp - y.timestamp);
 
+        if (allMigrations.length) {
+            this.debug(`Found ${allMigrations.length} up migration(s) found`, '🐞');
+        } else {
+            this.debug('No up migration(s) found', '⚠️');
+        }
+
         let migrations: IPostgreSQLMigration[];
         if (typeof options?.timestamp === 'number') {
+            this.debug(`Will upgrade to ${options.timestamp} ...`, '🐞');
+
             migrations = [];
 
             for (const m of allMigrations) {
                 migrations.push(m);  // add ...
+                this.debug(`Will use upgrade script ${m.name} ...`, '🐞');
 
                 if (m.timestamp === options.timestamp) {
                     break;  // ... until timestamp has been found
                 }
             }
         } else {
+            this.debug('Will do complete upgrade ...', '🐞');
+
             migrations = allMigrations;
         }
 
@@ -292,19 +340,22 @@ export class PostgreSQLMigrationContext {
             migrations,
             executeMigration: async ({ adapter, context, existingMigration, migration }) => {
                 if (existingMigration) {
-                    return;  // already executed
+                    // already executed
+                    this.debug(`Skipping upgrade ${existingMigration.name} (${existingMigration.timestamp}) ...`, 'ℹ️');
+                } else {
+                    await Promise.resolve(
+                        migration.module.up(adapter, context, this.debug)
+                    );
+
+                    const newMigration = new Migrations();
+                    newMigration.name = migration.name;
+                    newMigration.timestamp = migration.timestamp;
+
+                    await context.insert(newMigration);
+                    this.debug(`Upgrade ${migration.name} (${migration.timestamp}) executed`, '✅');
                 }
-
-                await Promise.resolve(
-                    migration.module.up(adapter, context)
-                );
-
-                const newMigration = new Migrations();
-                newMigration.name = migration.name;
-                newMigration.timestamp = migration.timestamp;
-
-                await context.insert(newMigration);
-            }
+            },
+            type: 'up'
         });
     }
 }
