@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import { DataAdapterBase, IFindOneOptions, IFindOptions } from '@egomobile/orm';
+import { DataAdapterBase, IFindOneOptions, IFindOptions, NULL } from '@egomobile/orm';
 import type { Constructor, List, Nilable } from '@egomobile/orm/lib/types/internal';
 import { ClientConfig, Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
 import { isExplicitNull } from '@egomobile/orm';
@@ -23,10 +23,6 @@ import type { DebugAction, PostgreSQLClientLike } from '../types';
 import type { DebugActionWithoutSource, Getter } from '../types/internal';
 import { asList, isNil, toDebugActionSafe } from '../utils/internal';
 import { isPostgreSQLClientLike } from '../utils';
-
-interface IToClientGetterOptions {
-    value: Nilable<PostgreSQLClientLike | Getter<PostgreSQLClientLike> | PostgreSQLClientConfig>;
-}
 
 /**
  * Options for 'find()' method of a 'PostgreSQLDataAdapter' instance.
@@ -86,6 +82,18 @@ export interface IPostgreSQLDataAdapterOptions {
     debug?: Nilable<DebugAction>;
 }
 
+interface IToClientGetterOptions {
+    value: Nilable<PostgreSQLClientLike | Getter<PostgreSQLClientLike> | PostgreSQLClientConfig>;
+}
+
+interface ITransformValueOptions {
+    direction: 'from' | 'to';
+    field: string;
+    type: Constructor<any>;
+    value: any;
+}
+
+
 /**
  * A possible value for a pg client/pool configuration.
  */
@@ -136,7 +144,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      * @inheritdoc
      */
     public async find<T extends any = any>(type: Constructor<T>, options?: IPostgreSQLFindOptions | null): Promise<T[]> {
-        const table = this.getTableNameByTypeOrThrow(type);
+        const table = this.getEntityNameByTypeOrThrow(type);
 
         const fields = options?.fields;
         if (!isNil(fields)) {
@@ -208,13 +216,20 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         for (const row of sqlResult.rows) {
             const newEntity: any = new type();
 
-            for (const [columnName, value] of Object.entries(row)) {
+            for (const [field, value] of Object.entries(row)) {
                 if (typeof value === 'function') {
                     continue;  // ignore methods
                 }
 
-                if (columnName in newEntity) {
-                    newEntity[columnName] = value;  // only if column is prop of entity
+                if (field in newEntity) {
+                    // only if column is prop of entity
+
+                    newEntity[field] = await this.transformValue({
+                        direction: 'from',
+                        field,
+                        type,
+                        value
+                    });
                 }
             }
 
@@ -245,66 +260,6 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         return Promise.resolve(this.clientGetter());
     }
 
-    private getTableByTypeOrThrow(type: Constructor<any>) {
-        for (const [table, config] of Object.entries(this.context.entities)) {
-            if (config.type === type) {
-                return {
-                    table,
-                    config
-                };
-            }
-        }
-
-        throw new Error(`Cannot use type ${type.name} for tables`);
-    }
-
-    /**
-     * Returns the list of SQL table columns, which represent
-     * the IDs of a row.
-     *
-     * @param {Constructor<any>} type The type.
-     *
-     * @returns {string} The name of the underlying SQL table.
-     */
-    public getTableIdsByType(type: Constructor<any>): string[] {
-        const { config } = this.getTableByTypeOrThrow(type);
-
-        if (config.ids?.length) {
-            return config.ids;
-        } else {
-            return [];
-        }
-    }
-
-    /**
-     * Returns the list of SQL table columns, which represent
-     * the IDs of a row, or throws an exception if not defined.
-     *
-     * @param {Constructor<any>} type The type.
-     *
-     * @returns {string} The name of the underlying SQL table.
-     */
-    public getTableIdsByTypeOrThrow(type: Constructor<any>): string[] {
-        const ids = this.getTableIdsByType(type);
-
-        if (ids.length) {
-            return ids;
-        }
-
-        throw new Error(`No IDs defined for type ${type.name}`);
-    }
-
-    /**
-     * Returns the SQL table name by type or throws an exception, if not configured.
-     *
-     * @param {Constructor<any>} type The type.
-     *
-     * @returns {string} The name of the underlying SQL table.
-     */
-    public getTableNameByTypeOrThrow(type: Constructor<any>): string {
-        return this.getTableByTypeOrThrow(type).table;
-    }
-
     /**
      * @inheritdoc
      */
@@ -317,17 +272,24 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
         for (const entity of asList(entities)!) {
             const type: Constructor = (entity as any).constructor;
-            const table = this.getTableNameByTypeOrThrow(type);
-            const idCols = this.getTableIdsByType(type);
+            const table = this.getEntityNameByTypeOrThrow(type);
+            const idCols = this.getEntityIdsByType(type);
             const valueCols = Object.keys(entity as any).filter(
                 (columName) => !isNil((entity as any)[columName]),
             );
 
             const values: any[] = [];
-            for (const c of valueCols) {
-                const v = (entity as any)[c];
+            for (const field of valueCols) {
+                const value = (entity as any)[field];
 
-                values.push(isExplicitNull(v) ? null : v);
+                values.push(
+                    await this.transformValue({
+                        direction: 'to',
+                        field,
+                        type,
+                        value
+                    })
+                );
             }
 
             const columnList = valueCols.map((c) => `"${c}"`).join(',');
@@ -396,15 +358,22 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
         for (const entity of asList(entities)!) {
             const type: Constructor = (entity as any).constructor;
-            const table = this.getTableNameByTypeOrThrow(type);
-            const idCols = this.getTableIdsByTypeOrThrow(type);
+            const table = this.getEntityNameByTypeOrThrow(type);
+            const idCols = this.getEntityIdsByTypeOrThrow(type);
 
             // collect ID values
             const idValues: any[] = [];
-            for (const c of idCols) {
-                const v = (entity as any)[c];
+            for (const field of idCols) {
+                const value = (entity as any)[field];
 
-                idValues.push(isExplicitNull(v) ? null : v);
+                idValues.push(
+                    await this.transformValue({
+                        direction: 'to',
+                        field,
+                        type,
+                        value
+                    })
+                );
             }
 
             let i = 0;
@@ -427,6 +396,23 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         return result;
     }
 
+    private async transformValue({ direction, field, type, value }: ITransformValueOptions): Promise<any> {
+        const entity = this.getEntityByType(type);
+
+        if (entity) {
+            const transformer = entity.config?.fields?.[field]?.transformer?.[direction];
+            if (transformer) {
+                return Promise.resolve(transformer(value));
+            }
+        }
+
+        if (direction === 'from') {
+            return isNil(value) ? NULL : value;
+        } else if (direction === 'to') {
+            return isExplicitNull(value) ? null : value;
+        }
+    }
+
     /**
      * @inheritdoc
      */
@@ -439,8 +425,8 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
         for (const entity of asList(entities)!) {
             const type: Constructor = (entity as any).constructor;
-            const table = this.getTableNameByTypeOrThrow(type);
-            const idCols = this.getTableIdsByTypeOrThrow(type);
+            const table = this.getEntityNameByTypeOrThrow(type);
+            const idCols = this.getEntityIdsByTypeOrThrow(type);
             const valueCols = Object.keys(entity as any).filter(
                 (columName) => !idCols.includes(columName) && !isNil((entity as any)[columName]),
             );
@@ -449,11 +435,18 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 continue;  // nothing to do
             }
 
-            const addValuesTo = (cols: string[], vals: any[]) => {
-                for (const c of cols) {
-                    const v = (entity as any)[c];
+            const addValuesTo = async (fields: string[], vals: any[]) => {
+                for (const field of fields) {
+                    const value = (entity as any)[field];
 
-                    vals.push(isExplicitNull(v) ? null : v);
+                    vals.push(
+                        this.transformValue({
+                            direction: 'to',
+                            field,
+                            type,
+                            value
+                        })
+                    );
                 }
             };
 
@@ -461,14 +454,14 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             // values to update
             const values: any[] = [];
-            addValuesTo(valueCols, values);
+            await addValuesTo(valueCols, values);
             const set = valueCols
                 .map((columnName) => `"${columnName}"=$${++i}`)
                 .join(',');
 
             // WHERE clause
             const idValues: any[] = [];
-            addValuesTo(idCols, idValues);
+            await addValuesTo(idCols, idValues);
             const where = idCols
                 .map((columnName) => `"${columnName}"=$${++i}`)
                 .join(' AND ');

@@ -158,7 +158,7 @@ export class PostgreSQLMigrationContext {
         allMigrations.sort((x, y) => y.timestamp - x.timestamp);
 
         if (allMigrations.length) {
-            this.debug(`Found ${allMigrations.length} down migration(s) found`, '🐞');
+            this.debug(`Found ${allMigrations.length} down migration(s)`, '🐞');
         } else {
             this.debug('No down migration(s) found', '⚠️');
         }
@@ -178,7 +178,7 @@ export class PostgreSQLMigrationContext {
                 this.debug(`Will use downgrade script ${m.name} ...`, '🐞');
             }
         } else {
-            this.debug('Will do complete downgrade ...', '🐞');
+            this.debug('Will do a complete downgrade ...', '🐞');
 
             migrations = allMigrations;
         }
@@ -311,7 +311,7 @@ export class PostgreSQLMigrationContext {
         allMigrations.sort((x, y) => x.timestamp - y.timestamp);
 
         if (allMigrations.length) {
-            this.debug(`Found ${allMigrations.length} up migration(s) found`, '🐞');
+            this.debug(`Found ${allMigrations.length} up migration(s)`, '🐞');
         } else {
             this.debug('No up migration(s) found', '⚠️');
         }
@@ -331,7 +331,7 @@ export class PostgreSQLMigrationContext {
                 }
             }
         } else {
-            this.debug('Will do complete upgrade ...', '🐞');
+            this.debug('Will do a complete upgrade ...', '🐞');
 
             migrations = allMigrations;
         }

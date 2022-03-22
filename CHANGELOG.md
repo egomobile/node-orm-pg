@@ -1,5 +1,10 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.7.0
+
+- implement data transformation support for fields of PostgreSQL entities
+- improve and fix debug messages in [PostgreSQLMigrationContext](https://egomobile.github.io/node-orm-pg/classes/PostgreSQLMigrationContext.html)
+
 ## 0.6.0
 
 - add debugging
