@@ -1,5 +1,9 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.8.0
+
+- add [queryAndMap()](https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html#queryAndMap)
+
 ## 0.7.0
 
 - implement data transformation support for fields of PostgreSQL entities
