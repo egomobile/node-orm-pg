@@ -210,7 +210,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         }
         q += ';';
 
-        return await this.queryAndMap(type, q, ...(params || []));
+        return this.queryAndMap(type, q, ...(params || []));
     }
 
     /**
