@@ -342,13 +342,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     }
 
     /**
-     * Invokes a raw SQL query and maps it to objects.
-     *
-     * @param {Constructor<T>} type The type of the target objects.
-     * @param {string} sql The SQL query,
-     * @param {any[]} [values] One or more values for the placeholders in the SQL query.
-     *
-     * @returns {Promise<T[]>} The promise with the result.
+     * @inheritdoc
      */
     public async queryAndMap<T extends any = any>(type: Constructor<T>, sql: string, ...values: any[]): Promise<T[]> {
         this.debug(`SQL QUERY AND MAP: ${sql}`, '🐞');
