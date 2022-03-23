@@ -456,7 +456,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                     const value = (entity as any)[field];
 
                     vals.push(
-                        this.transformValue({
+                        await this.transformValue({
                             direction: 'to',
                             field,
                             type,
