@@ -210,33 +210,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         }
         q += ';';
 
-        const sqlResult = await this.query(q, ...(params || []));
-
-        const entities: T[] = [];
-        for (const row of sqlResult.rows) {
-            const newEntity: any = new type();
-
-            for (const [field, value] of Object.entries(row)) {
-                if (typeof value === 'function') {
-                    continue;  // ignore methods
-                }
-
-                if (field in newEntity) {
-                    // only if column is prop of entity
-
-                    newEntity[field] = await this.transformValue({
-                        direction: 'from',
-                        field,
-                        type,
-                        value
-                    });
-                }
-            }
-
-            entities.push(newEntity);
-        }
-
-        return entities;
+        return this.queryAndMap(type, q, ...(params || []));
     }
 
     /**
@@ -330,6 +304,27 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         return result;
     }
 
+    private async mapEntityWithRow(entity: any, row: Record<string, any>) {
+        const type: Constructor = (entity as any).constructor;
+
+        for (const [field, value] of Object.entries(row)) {
+            if (typeof value === 'function') {
+                continue;  // ignore methods
+            }
+
+            if (field in entity) {
+                // only if column is prop of entity
+
+                entity[field] = await this.transformValue({
+                    direction: 'from',
+                    field,
+                    type,
+                    value
+                });
+            }
+        }
+    }
+
     /**
      * Invokes a raw SQL query.
      *
@@ -344,6 +339,27 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         const client = await this.getClient();
 
         return client.query(sql, values);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public async queryAndMap<T extends any = any>(type: Constructor<T>, sql: string, ...values: any[]): Promise<T[]> {
+        this.debug(`SQL QUERY AND MAP: ${sql}`, '🐞');
+
+        const client = await this.getClient();
+        const sqlResult = await client.query(sql, values);
+
+        const entities: T[] = [];
+
+        for (const row of sqlResult.rows) {
+            const newEntity = new type();
+            await this.mapEntityWithRow(newEntity, row);
+
+            entities.push(newEntity);
+        }
+
+        return entities;
     }
 
     /**
