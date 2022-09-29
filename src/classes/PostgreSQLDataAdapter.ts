@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import { DataAdapterBase, IFindOneOptions, IFindOptions, NULL } from '@egomobile/orm';
-import type { Constructor, List, Nilable } from '@egomobile/orm/lib/types/internal';
-import { ClientConfig, Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
-import { isExplicitNull } from '@egomobile/orm';
-import type { DebugAction, PostgreSQLClientLike } from '../types';
-import type { DebugActionWithoutSource, Getter } from '../types/internal';
-import { asList, isNil, toDebugActionSafe } from '../utils/internal';
-import { isPostgreSQLClientLike } from '../utils';
+import { DataAdapterBase, IFindOneOptions, IFindOptions, NULL } from "@egomobile/orm";
+import type { Constructor, List, Nilable } from "@egomobile/orm/lib/types/internal";
+import { ClientConfig, Pool, PoolClient, PoolConfig, QueryResult } from "pg";
+import { isExplicitNull } from "@egomobile/orm";
+import type { DebugAction, PostgreSQLClientLike } from "../types";
+import type { DebugActionWithoutSource, Getter } from "../types/internal";
+import { asList, isNil, toDebugActionSafe } from "../utils/internal";
+import { isPostgreSQLClientLike } from "../utils";
 
 /**
  * Options for 'find()' method of a 'PostgreSQLDataAdapter' instance.
@@ -39,7 +39,7 @@ export interface IPostgreSQLFindOptions extends IPostgreSQLFindOneOptions, IFind
     /**
      * Sort settings.
      */
-    sort?: Nilable<Record<string, 'ASC' | 'DESC'>>;
+    sort?: Nilable<Record<string, "ASC" | "DESC">>;
     /**
      * @inheritdoc
      */
@@ -61,7 +61,7 @@ export interface IPostgreSQLFindOneOptions extends IFindOneOptions {
     /**
      * Sort settings.
      */
-    sort?: Nilable<Record<string, 'ASC' | 'DESC'>>;
+    sort?: Nilable<Record<string, "ASC" | "DESC">>;
     /**
      * @inheritdoc
      */
@@ -87,7 +87,7 @@ interface IToClientGetterOptions {
 }
 
 interface ITransformValueOptions {
-    direction: 'from' | 'to';
+    direction: "from" | "to";
     field: string;
     type: Constructor<any>;
     value: any;
@@ -122,22 +122,23 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         let options: Nilable<IPostgreSQLDataAdapterOptions>;
         if (isPostgreSQLClientLike(optionsOrClient)) {
             options = {
-                client: optionsOrClient
+                "client": optionsOrClient
             };
-        } else {
+        }
+        else {
             options = optionsOrClient;
         }
 
         if (!isNil(options)) {
-            if (typeof options !== 'object') {
-                throw new TypeError('optionsOrClient is invalid');
+            if (typeof options !== "object") {
+                throw new TypeError("optionsOrClient is invalid");
             }
         }
 
         this.clientGetter = toClientGetter({
-            value: options?.client
+            "value": options?.client
         });
-        this.debug = toDebugActionSafe('PostgreSQLDataAdapter', options?.debug);
+        this.debug = toDebugActionSafe("PostgreSQLDataAdapter", options?.debug);
     }
 
     /**
@@ -149,48 +150,50 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         const fields = options?.fields;
         if (!isNil(fields)) {
             if (!Array.isArray(fields)) {
-                throw new TypeError('options.fields must be an array');
+                throw new TypeError("options.fields must be an array");
             }
         }
 
         const params = options?.params;
         if (!isNil(params)) {
             if (!Array.isArray(params)) {
-                throw new TypeError('options.params must be an array');
+                throw new TypeError("options.params must be an array");
             }
         }
 
         const sort = options?.sort;
         if (!isNil(sort)) {
-            if (typeof sort !== 'object') {
-                throw new TypeError('options.sort must be an object');
+            if (typeof sort !== "object") {
+                throw new TypeError("options.sort must be an object");
             }
         }
 
         const where = options?.where;
         if (!isNil(where)) {
-            if (typeof where !== 'string') {
-                throw new TypeError('options.where must be a string');
+            if (typeof where !== "string") {
+                throw new TypeError("options.where must be a string");
             }
         }
 
         const limit = options?.limit;
         if (!isNil(limit)) {
-            if (typeof limit !== 'number') {
-                throw new TypeError('options.limit must be a number');
+            if (typeof limit !== "number") {
+                throw new TypeError("options.limit must be a number");
             }
         }
 
         const offset = options?.offset;
         if (!isNil(offset)) {
-            if (typeof offset !== 'number') {
-                throw new TypeError('options.offset must be a number');
+            if (typeof offset !== "number") {
+                throw new TypeError("options.offset must be a number");
             }
         }
 
         const projection = fields?.length ?
-            fields.map(f => `"${String(f)}"`).join(',') :
-            '*';
+            fields.map(f => {
+                return `"${String(f)}"`;
+            }).join(",") :
+            "*";
 
         // build query
         let q = `SELECT ${projection} FROM ${table}`;
@@ -199,8 +202,10 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         }
         if (sort) {
             q += ` ORDER BY ${Object.entries(sort)
-                .map((entry) => `"${entry[0]}" ${entry[1]}`)
-                .join(',')}`;
+                .map((entry) => {
+                    return `"${entry[0]}" ${entry[1]}`;
+                })
+                .join(",")}`;
         }
         if (!isNil(limit)) {
             q += ` LIMIT ${limit}`;
@@ -208,7 +213,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         if (!isNil(offset)) {
             q += ` OFFSET ${offset}`;
         }
-        q += ';';
+        q += ";";
 
         return this.queryAndMap(type, q, ...(params || []));
     }
@@ -219,7 +224,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     public async findOne<T extends any = any>(type: Constructor<T>, options?: IPostgreSQLFindOneOptions | null): Promise<T | null> {
         const entities = await this.find(type, {
             ...(options || {}),
-            limit: 1
+            "limit": 1
         });
 
         return entities[0] || null;
@@ -239,7 +244,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      */
     public async insert<T extends any = any>(entities: T | List<T>): Promise<T[]> {
         if (isNil(entities)) {
-            throw new TypeError('entities cannot be (null) or (undefined)');
+            throw new TypeError("entities cannot be (null) or (undefined)");
         }
 
         const result: T[] = [];
@@ -249,7 +254,9 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const table = this.getEntityNameByTypeOrThrow(type);
             const idCols = this.getEntityIdsByType(type);
             const valueCols = Object.keys(entity as any).filter(
-                (columName) => !isNil((entity as any)[columName]),
+                (columName) => {
+                    return !isNil((entity as any)[columName]);
+                },
             );
 
             const values: any[] = [];
@@ -258,7 +265,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
                 values.push(
                     await this.transformValue({
-                        direction: 'to',
+                        "direction": "to",
                         field,
                         type,
                         value
@@ -266,12 +273,16 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 );
             }
 
-            const columnList = valueCols.map((c) => `"${c}"`).join(',');
-            const valueList = valueCols.map((c, i) => `$${i + 1}`).join(',');
+            const columnList = valueCols.map((c) => {
+                return `"${c}"`;
+            }).join(",");
+            const valueList = valueCols.map((c, i) => {
+                return `$${i + 1}`;
+            }).join(",");
 
-            let returning = '';
+            let returning = "";
             if (idCols.length) {
-                returning = `RETURNING ${idCols.join(',')}`;
+                returning = `RETURNING ${idCols.join(",")}`;
             }
 
             const queryResult = await this.query(
@@ -284,18 +295,21 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
                 // WHERE clause for getting new, inserted entity
                 const whereInserted = Object.keys(row)
-                    .map((columnName, index) => `"${columnName}"=$${index + 1}`)
-                    .join(' AND ');
+                    .map((columnName, index) => {
+                        return `"${columnName}"=$${index + 1}`;
+                    })
+                    .join(" AND ");
                 const params = Object.values(row);
 
                 // get new row as entity with new and updated data
                 result.push(
                     await this.findOne(type, {
-                        where: whereInserted,
+                        "where": whereInserted,
                         params
                     })
                 );
-            } else {
+            }
+            else {
                 // no ID column(s), so return simple entity
                 result.push(entity);
             }
@@ -308,7 +322,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         const type: Constructor = (entity as any).constructor;
 
         for (const [field, value] of Object.entries(row)) {
-            if (typeof value === 'function') {
+            if (typeof value === "function") {
                 continue;  // ignore methods
             }
 
@@ -316,7 +330,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
                 // only if column is prop of entity
 
                 entity[field] = await this.transformValue({
-                    direction: 'from',
+                    "direction": "from",
                     field,
                     type,
                     value
@@ -334,7 +348,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      * @returns {Promise<QueryResult<any>>} The promise with the result.
      */
     public async query(sql: string, ...values: any[]): Promise<QueryResult<any>> {
-        this.debug(`SQL QUERY: ${sql}`, '🐞');
+        this.debug(`SQL QUERY: ${sql}`, "🐞");
 
         const client = await this.getClient();
 
@@ -345,7 +359,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      * @inheritdoc
      */
     public async queryAndMap<T extends any = any>(type: Constructor<T>, sql: string, ...values: any[]): Promise<T[]> {
-        this.debug(`SQL QUERY AND MAP: ${sql}`, '🐞');
+        this.debug(`SQL QUERY AND MAP: ${sql}`, "🐞");
 
         const client = await this.getClient();
         const sqlResult = await client.query(sql, values);
@@ -367,7 +381,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      */
     public async remove<T extends any = any>(entities: T | List<T>): Promise<T[]> {
         if (isNil(entities)) {
-            throw new TypeError('entities cannot be (null) or (undefined)');
+            throw new TypeError("entities cannot be (null) or (undefined)");
         }
 
         const result: T[] = [];
@@ -384,7 +398,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
                 idValues.push(
                     await this.transformValue({
-                        direction: 'to',
+                        "direction": "to",
                         field,
                         type,
                         value
@@ -396,8 +410,10 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             // WHERE clause
             const where = idCols
-                .map((columnName) => `"${columnName}"=$${++i}`)
-                .join(' AND ');
+                .map((columnName) => {
+                    return `"${columnName}"=$${++i}`;
+                })
+                .join(" AND ");
 
             // build and run query
             await this.query(
@@ -422,9 +438,10 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             }
         }
 
-        if (direction === 'from') {
+        if (direction === "from") {
             return isNil(value) ? NULL : value;
-        } else if (direction === 'to') {
+        }
+        else if (direction === "to") {
             return isExplicitNull(value) ? null : value;
         }
     }
@@ -434,7 +451,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      */
     public async update<T extends any = any>(entities: T | List<T>): Promise<T[]> {
         if (isNil(entities)) {
-            throw new TypeError('entities cannot be (null) or (undefined)');
+            throw new TypeError("entities cannot be (null) or (undefined)");
         }
 
         const result: T[] = [];
@@ -444,7 +461,9 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const table = this.getEntityNameByTypeOrThrow(type);
             const idCols = this.getEntityIdsByTypeOrThrow(type);
             const valueCols = Object.keys(entity as any).filter(
-                (columName) => !idCols.includes(columName) && !isNil((entity as any)[columName]),
+                (columName) => {
+                    return !idCols.includes(columName) && !isNil((entity as any)[columName]);
+                },
             );
 
             if (!valueCols.length) {
@@ -457,7 +476,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
                     vals.push(
                         await this.transformValue({
-                            direction: 'to',
+                            "direction": "to",
                             field,
                             type,
                             value
@@ -472,15 +491,19 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const values: any[] = [];
             await addValuesTo(valueCols, values);
             const set = valueCols
-                .map((columnName) => `"${columnName}"=$${++i}`)
-                .join(',');
+                .map((columnName) => {
+                    return `"${columnName}"=$${++i}`;
+                })
+                .join(",");
 
             // WHERE clause
             const idValues: any[] = [];
             await addValuesTo(idCols, idValues);
             const where = idCols
-                .map((columnName) => `"${columnName}"=$${++i}`)
-                .join(' AND ');
+                .map((columnName) => {
+                    return `"${columnName}"=$${++i}`;
+                })
+                .join(" AND ");
 
             // now build and run query
             await this.query(
@@ -490,14 +513,16 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             // WHERE clause for getting updated entity
             const whereUpdated = idCols
-                .map((columnName, index) => `"${columnName}"=$${index + 1}`)
-                .join(' AND ');
+                .map((columnName, index) => {
+                    return `"${columnName}"=$${index + 1}`;
+                })
+                .join(" AND ");
 
             // get updated entity
             result.push(
                 await this.findOne(type, {
-                    where: whereUpdated,
-                    params: idValues
+                    "where": whereUpdated,
+                    "params": idValues
                 })
             );
         }
@@ -509,15 +534,21 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 function toClientGetter(
     { value }: IToClientGetterOptions
 ): Getter<PostgreSQLClientLike> {
-    if (typeof value === 'function') {
+    if (typeof value === "function") {
         return value;
-    } else if (isPostgreSQLClientLike(value)) {
-        return async () => value;
-    } else if (isNil(value) || typeof value === 'object') {
+    }
+    else if (isPostgreSQLClientLike(value)) {
+        return async () => {
+            return value;
+        };
+    }
+    else if (isNil(value) || typeof value === "object") {
         const pool = new Pool(value as PoolConfig || undefined);
 
-        return () => pool;
+        return () => {
+            return pool;
+        };
     }
 
-    throw new TypeError('value cannot be used as client or pool');
+    throw new TypeError("value cannot be used as client or pool");
 }

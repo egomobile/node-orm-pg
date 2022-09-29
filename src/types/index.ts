@@ -13,10 +13,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import type { IDataContext } from '@egomobile/orm';
-import { Nilable } from '@egomobile/orm/lib/types/internal';
-import { Client, Pool } from 'pg';
-import type { PostgreSQLDataAdapter } from '../classes';
+import type { IDataContext } from "@egomobile/orm";
+import { Nilable } from "@egomobile/orm/lib/types/internal";
+import { Client, Pool } from "pg";
+import type { PostgreSQLDataAdapter } from "../classes";
 
 /**
  * A debug action.
@@ -36,7 +36,7 @@ export type DebugAction = (message: string, icon: DebugIcon, source?: Nilable<st
  * ❌: error
  * ⚠️: warning
  */
-export type DebugIcon = '🐞' | '✅' | 'ℹ️' | '❌' | '⚠️';
+export type DebugIcon = "🐞" | "✅" | "ℹ️" | "❌" | "⚠️";
 
 /**
  * Information, which can be used to create a new migration file.

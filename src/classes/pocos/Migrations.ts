@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import { IEntityConfig } from '@egomobile/orm';
+import { IEntityConfig } from "@egomobile/orm";
 
 export class Migrations {
     public id: string | null = null;
@@ -26,7 +26,7 @@ export class Migrations {
 }
 
 const config: IEntityConfig = {
-    type: Migrations
+    "type": Migrations
 };
 
 export default config;

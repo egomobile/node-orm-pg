@@ -13,9 +13,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import type { List, Nilable } from '@egomobile/orm/lib/types/internal';
-import type { DebugAction } from '../types';
-import type { DebugActionWithoutSource } from '../types/internal';
+import type { List, Nilable } from "@egomobile/orm/lib/types/internal";
+import type { DebugAction } from "../types";
+import type { DebugActionWithoutSource } from "../types/internal";
 
 export function asList<T extends any = any>(
     itemOrList: Nilable<T | List<T>>,
@@ -33,14 +33,14 @@ export function asList<T extends any = any>(
 
 export function isIterable(obj: any): obj is List<any> {
     if (obj) {
-        return typeof obj[Symbol.iterator] === 'function';
+        return typeof obj[Symbol.iterator] === "function";
     }
 
     return false;
 }
 
 export function isNil(val: unknown): val is (null | undefined) {
-    return typeof val === 'undefined' || val === null;
+    return typeof val === "undefined" || val === null;
 }
 
 export function toDebugActionSafe(source: string, debug: Nilable<DebugAction>): DebugActionWithoutSource {
@@ -48,9 +48,11 @@ export function toDebugActionSafe(source: string, debug: Nilable<DebugAction>): 
         return () => { };
     }
 
-    if (typeof debug !== 'function') {
-        throw new TypeError('debug must be of type function');
+    if (typeof debug !== "function") {
+        throw new TypeError("debug must be of type function");
     }
 
-    return (message, icon) => debug(message, icon, source);
+    return (message, icon) => {
+        return debug(message, icon, source);
+    };
 }

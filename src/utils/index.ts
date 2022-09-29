@@ -13,14 +13,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import fs from 'fs';
-import path from 'path';
-import sanitizeFilename from 'sanitize-filename';
-import { pascalCase } from 'change-case';
-import type { INewMigrationInfo } from '../types';
-import { Nilable } from '@egomobile/orm/lib/types/internal';
-import { isNil } from './internal';
-import { Client, Pool } from 'pg';
+import fs from "fs";
+import path from "path";
+import sanitizeFilename from "sanitize-filename";
+import { pascalCase } from "change-case";
+import type { INewMigrationInfo } from "../types";
+import { Nilable } from "@egomobile/orm/lib/types/internal";
+import { isNil } from "./internal";
+import { Client, Pool } from "pg";
 
 /**
  * Options for 'createNewMigration()' and 'createNewMigrationSync()' functions.
@@ -78,7 +78,7 @@ export interface IMigrationFileStringBuilderContext {
     type: MigrationFileStringBuilderContextType;
 }
 
-export type MigrationFileStringBuilderContextType = 'footer' | 'header';
+export type MigrationFileStringBuilderContextType = "footer" | "header";
 
 /**
  * A function, which create a string for a migration file.
@@ -107,7 +107,7 @@ export async function createNewMigrationFile(name: string, options?: Nilable<ICr
         }
     }
 
-    await fs.promises.writeFile(fullPath, source, 'utf8');
+    await fs.promises.writeFile(fullPath, source, "utf8");
 
     return fullPath;
 }
@@ -130,7 +130,7 @@ export function createNewMigrationFileSync(name: string, options?: Nilable<ICrea
         }
     }
 
-    fs.writeFileSync(fullPath, source, 'utf8');
+    fs.writeFileSync(fullPath, source, "utf8");
 
     return fullPath;
 }
@@ -143,8 +143,8 @@ export function createNewMigrationFileSync(name: string, options?: Nilable<ICrea
  * @returns {INewMigrationInfo} The new info.
  */
 export function createNewMigrationInfo(name: string): INewMigrationInfo {
-    if (typeof name !== 'string') {
-        throw new TypeError('name must be of type string');
+    if (typeof name !== "string") {
+        throw new TypeError("name must be of type string");
     }
 
     const now = new Date();
@@ -153,15 +153,15 @@ export function createNewMigrationInfo(name: string): INewMigrationInfo {
 
     return {
         name,
-        timestamp: now.valueOf(),
+        "timestamp": now.valueOf(),
         filename
     };
 }
 
 function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<ICreateNewMigrationOptions>) {
     if (!isNil(options)) {
-        if (typeof options !== 'object') {
-            throw new TypeError('options must be of type object');
+        if (typeof options !== "object") {
+            throw new TypeError("options must be of type object");
         }
     }
 
@@ -172,33 +172,48 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
     dir = options?.dir;
     if (isNil(dir)) {
         dir = process.cwd();
-    } else {
-        if (typeof options?.dir !== 'string') {
-            throw new TypeError('options.dir must be of type string');
+    }
+    else {
+        if (typeof options?.dir !== "string") {
+            throw new TypeError("options.dir must be of type string");
         }
     }
 
     if (isNil(options?.footer)) {
-        footerBuilder = () => '';
-    } else {
-        if (typeof options!.footer === 'string') {
-            footerBuilder = () => options!.footer;
-        } else if (typeof options!.footer === 'function') {
+        footerBuilder = () => {
+            return "";
+        };
+    }
+    else {
+        if (typeof options!.footer === "string") {
+            footerBuilder = () => {
+                return options!.footer;
+            };
+        }
+        else if (typeof options!.footer === "function") {
             footerBuilder = options!.footer;
-        } else {
-            throw new TypeError('options.footer must be of type string or function');
+        }
+        else {
+            throw new TypeError("options.footer must be of type string or function");
         }
     }
 
     if (isNil(options?.header)) {
-        headerBuilder = () => '';
-    } else {
-        if (typeof options!.header === 'string') {
-            headerBuilder = () => options!.header;
-        } else if (typeof options!.header === 'function') {
+        headerBuilder = () => {
+            return "";
+        };
+    }
+    else {
+        if (typeof options!.header === "string") {
+            headerBuilder = () => {
+                return options!.header;
+            };
+        }
+        else if (typeof options!.header === "function") {
             headerBuilder = options!.header;
-        } else {
-            throw new TypeError('options.header must be of type string or function');
+        }
+        else {
+            throw new TypeError("options.header must be of type string or function");
         }
     }
 
@@ -207,25 +222,25 @@ function getOptionsForCreateNewMigrationOrThrow(name: string, options: Nilable<I
     }
 
     const info = createNewMigrationInfo(name);
-    const extension = options?.typescript ? '.ts' : '.js';
+    const extension = options?.typescript ? ".ts" : ".js";
 
     const getStringBuilderValue = (type: MigrationFileStringBuilderContextType, func: MigrationFileStringBuilder) => {
         const context: IMigrationFileStringBuilderContext = {
-            dir: dir!,
+            "dir": dir!,
             extension,
-            filename: info.filename,
-            name: info.name,
-            timestamp: info.timestamp,
+            "filename": info.filename,
+            "name": info.name,
+            "timestamp": info.timestamp,
             type
         };
 
         const val = func(context);
-        return isNil(val) ? '' : String(val);
+        return isNil(val) ? "" : String(val);
     };
 
     let source: string;
     if (options?.typescript) {
-        source = `${getStringBuilderValue('header', headerBuilder)}import type { MigrationAction } from '@egomobile/orm-pg';
+        source = `${getStringBuilderValue("header", headerBuilder)}import type { MigrationAction } from '@egomobile/orm-pg';
 
 /**
  * Function to UP-grade the database.
@@ -248,9 +263,10 @@ export const down: MigrationAction = async (adapter, context, debug) => {
 
     throw new Error('down() not implemented!');
 };
-${getStringBuilderValue('footer', footerBuilder)}`;
-    } else {
-        source = `${getStringBuilderValue('header', headerBuilder)}/**
+${getStringBuilderValue("footer", footerBuilder)}`;
+    }
+    else {
+        source = `${getStringBuilderValue("header", headerBuilder)}/**
  * Function to UP-GRADE the database.
  *
  * @param {PostgreSQLDataAdapter} adapter The current data adapter.
@@ -279,7 +295,7 @@ module.exports.down = async (adapter, context, debug) => {
 
     throw new Error('down() not implemented!');
 };
-${getStringBuilderValue('footer', footerBuilder)}`;
+${getStringBuilderValue("footer", footerBuilder)}`;
     }
 
     return {
