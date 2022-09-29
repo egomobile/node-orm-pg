@@ -3,6 +3,7 @@
 ## 0.10.0
 
 - update to `@egomobile/orm^0.8.0`
+- library required at least [Node 14](https://nodejs.org/en/blog/release/v14.0.0/) now
 - `npm update`s
 
 ## 0.8.1
