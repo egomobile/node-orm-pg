@@ -1,5 +1,10 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.10.0
+
+- update to `@egomobile/orm^0.8.0`
+- `npm update`s
+
 ## 0.8.1
 
 - add [queryAndMap()](https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html#queryAndMap)
