@@ -14,7 +14,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import type { List, Nilable } from "@egomobile/orm/lib/types/internal";
-import type { DebugAction } from "../types";
+import type { DebugAction, IPostgreSQLMigration } from "../types";
 import type { DebugActionWithoutSource } from "../types/internal";
 
 export function asList<T extends any = any>(
@@ -41,6 +41,18 @@ export function isIterable(obj: any): obj is List<any> {
 
 export function isNil(val: unknown): val is (null | undefined) {
     return typeof val === "undefined" || val === null;
+}
+
+export function setupMigrationModuleProp(
+    migration: IPostgreSQLMigration, fullPath: string
+) {
+    // IPostgreSQLMigration.module
+    Object.defineProperty(migration, "module", {
+        "enumerable": true,
+        "get": () => {
+            return require(fullPath);
+        }
+    });
 }
 
 export function toDebugActionSafe(source: string, debug: Nilable<DebugAction>): DebugActionWithoutSource {

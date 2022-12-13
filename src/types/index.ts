@@ -63,7 +63,7 @@ export interface IPostgreSQLMigration {
     /**
      * The underlying module.
      */
-    module: IPostgreSQLMigrationModule;
+    readonly module: IPostgreSQLMigrationModule;
     /**
      * The name.
      */
