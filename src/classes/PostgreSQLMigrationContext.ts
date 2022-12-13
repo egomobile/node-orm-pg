@@ -23,7 +23,7 @@ import type { PostgreSQLDataAdapter, PostgreSQLDataAdapterOptionsValue } from ".
 import { createDataContext, EntityConfigurations, IDataAdapter, IDataContext } from "@egomobile/orm";
 import type { DebugActionWithoutSource, Getter } from "../types/internal";
 import { DebugAction, IPostgreSQLMigration } from "../types";
-import { isNil, toDebugActionSafe } from "../utils/internal";
+import { isNil, setupMigrationModuleProp, toDebugActionSafe } from "../utils/internal";
 import { isPostgreSQLClientLike } from "../utils";
 
 /**
@@ -240,11 +240,16 @@ export class PostgreSQLMigrationContext {
 
                 const stat = await fs.promises.stat(fullPath);
                 if (stat.isFile()) {
-                    loadedMigrations.push({
-                        "module": require(fullPath),
+                    const newMigration: IPostgreSQLMigration = {
+                        "module": undefined!,
                         "name": match[3],
                         "timestamp": parseInt(match[1], 10)
-                    });
+                    };
+
+                    // setup props, before add to list
+                    setupMigrationModuleProp(newMigration, fullPath);
+
+                    loadedMigrations.push(newMigration);
                 }
             }
         }
@@ -284,7 +289,7 @@ export class PostgreSQLMigrationContext {
                 const existingMigration = finishedMigrations.find(
                     ({ name, timestamp }) => {
                         return String(name) === String(m.name) &&
-                        String(timestamp) === String(m.timestamp);
+                            String(timestamp) === String(m.timestamp);
                     },
                 );
 

@@ -1,5 +1,9 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.11.0
+
+- **BREAKING CHANGE**: (module property of IPostgreSQLMigration interface)[https://egomobile.github.io/node-orm-pg/interfaces/IPostgreSQLMigration.html#module] is now lazy loaded and read-only
+
 ## 0.10.0
 
 - update to `@egomobile/orm^0.8.0`
