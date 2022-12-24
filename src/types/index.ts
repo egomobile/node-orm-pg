@@ -14,7 +14,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import type { IDataContext } from "@egomobile/orm";
-import { Nilable } from "@egomobile/orm/lib/types/internal";
+import type { Nilable } from "@egomobile/orm/lib/types/internal";
 import { Client, Pool } from "pg";
 import type { PostgreSQLDataAdapter } from "../classes";
 

@@ -1,12 +1,13 @@
 # Change Log (@egomobile/orm-pg)
 
-## 0.12.0
+## 0.12.1
 
 - **BREAKING CHANGE**: update to version `^0.9.0` of [node-orm](https://github.com/egomobile/node-orm)
 - library required at least [Node 16](https://nodejs.org/en/blog/release/v16.0.0/) now
 - add `registerBigIntAsNumber()` function, which can help to fix issue, that `bigint` is returned as `string` instead of `number`
 - `npm update`s
 - add missing documentation
+- code cleanups
 
 ## 0.11.0
 

@@ -19,7 +19,7 @@ import pg from "pg";
 import sanitizeFilename from "sanitize-filename";
 import { pascalCase } from "change-case";
 import type { INewMigrationInfo } from "../types";
-import { Nilable } from "@egomobile/orm/lib/types/internal";
+import type { Nilable } from "@egomobile/orm/lib/types/internal";
 import { isNil } from "./internal";
 import { Client, Pool } from "pg";
 
