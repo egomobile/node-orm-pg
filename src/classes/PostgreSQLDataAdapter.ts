@@ -21,7 +21,7 @@ import { ClientConfig, Pool, PoolClient, PoolConfig, QueryResult } from "pg";
 import { isExplicitNull } from "@egomobile/orm";
 import type { DebugAction, PostgreSQLClientLike } from "../types";
 import type { DebugActionWithoutSource, Getter } from "../types/internal";
-import { asList, isNil, toDebugActionSafe } from "../utils/internal";
+import { asList, isIterable, isNil, toDebugActionSafe } from "../utils/internal";
 import { isPostgreSQLClientLike } from "../utils";
 
 /**
@@ -242,14 +242,19 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     /**
      * @inheritdoc
      */
-    public async insert<T extends any = any>(entities: T | List<T>): Promise<T[]> {
-        if (isNil(entities)) {
-            throw new TypeError("entities cannot be (null) or (undefined)");
+    public async insert<T extends any = any>(entity: T): Promise<T>;
+    public async insert<T extends any = any>(entities: List<T>): Promise<T[]>;
+    public async insert<T extends any = any>(entityOrEntities: T | List<T>): Promise<T | T[]> {
+        if (isNil(entityOrEntities)) {
+            throw new TypeError("entityOrEntities cannot be (null) or (undefined)");
         }
+
+        const isSingleEntity = !isIterable(entityOrEntities);
+        const entities = asList(entityOrEntities)!;
 
         const result: T[] = [];
 
-        for (const entity of asList(entities)!) {
+        for (const entity of entities) {
             const type: Constructor = (entity as any).constructor;
             const table = this.getEntityNameByTypeOrThrow(type);
             const idCols = this.getEntityIdsByType(type);
@@ -315,7 +320,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             }
         }
 
-        return result;
+        return isSingleEntity ? result[0] : result;
     }
 
     private async mapEntityWithRow(entity: any, row: Record<string, any>) {
@@ -379,14 +384,19 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     /**
      * @inheritdoc
      */
-    public async remove<T extends any = any>(entities: T | List<T>): Promise<T[]> {
-        if (isNil(entities)) {
-            throw new TypeError("entities cannot be (null) or (undefined)");
+    public async remove<T extends any = any>(entity: T): Promise<T>;
+    public async remove<T extends any = any>(entities: List<T>): Promise<T[]>;
+    public async remove<T extends any = any>(entityOrEntities: T | List<T>): Promise<T | T[]> {
+        if (isNil(entityOrEntities)) {
+            throw new TypeError("entityOrEntities cannot be (null) or (undefined)");
         }
+
+        const isSingleEntity = !isIterable(entityOrEntities);
+        const entities = asList(entityOrEntities)!;
 
         const result: T[] = [];
 
-        for (const entity of asList(entities)!) {
+        for (const entity of entities) {
             const type: Constructor = (entity as any).constructor;
             const table = this.getEntityNameByTypeOrThrow(type);
             const idCols = this.getEntityIdsByTypeOrThrow(type);
@@ -425,7 +435,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             result.push(entity);
         }
 
-        return result;
+        return isSingleEntity ? result[0] : result;
     }
 
     private async transformValue({ direction, field, type, value }: ITransformValueOptions): Promise<any> {
@@ -449,14 +459,19 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     /**
      * @inheritdoc
      */
-    public async update<T extends any = any>(entities: T | List<T>): Promise<T[]> {
-        if (isNil(entities)) {
-            throw new TypeError("entities cannot be (null) or (undefined)");
+    public async update<T extends any = any>(entity: T): Promise<T>;
+    public async update<T extends any = any>(entities: List<T>): Promise<T[]>;
+    public async update<T extends any = any>(entityOrEntities: T | List<T>): Promise<T | T[]> {
+        if (isNil(entityOrEntities)) {
+            throw new TypeError("entityOrEntities cannot be (null) or (undefined)");
         }
+
+        const isSingleEntity = !isIterable(entityOrEntities);
+        const entities = asList(entityOrEntities)!;
 
         const result: T[] = [];
 
-        for (const entity of asList(entities)!) {
+        for (const entity of entities) {
             const type: Constructor = (entity as any).constructor;
             const table = this.getEntityNameByTypeOrThrow(type);
             const idCols = this.getEntityIdsByTypeOrThrow(type);
@@ -527,7 +542,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             );
         }
 
-        return result;
+        return isSingleEntity ? result[0] : result;
     }
 }
 

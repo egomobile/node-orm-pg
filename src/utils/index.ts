@@ -15,6 +15,7 @@
 
 import fs from "fs";
 import path from "path";
+import pg from "pg";
 import sanitizeFilename from "sanitize-filename";
 import { pascalCase } from "change-case";
 import type { INewMigrationInfo } from "../types";
@@ -78,6 +79,23 @@ export interface IMigrationFileStringBuilderContext {
     type: MigrationFileStringBuilderContextType;
 }
 
+/**
+ * Options for `registerBigIntAsNumber()` function.
+ */
+export interface IRegisterBigIntAsNumberOptions {
+    /**
+     * Custom `pg` module.
+     */
+    pgModule?: Nilable<any>;
+    /**
+     * A custom pasrer.
+     */
+    setTypeParser?: Nilable<SetTypeParserAction>;
+}
+
+/**
+ * Possible values for `IMigrationFileStringBuilderContext.type` property.
+ */
 export type MigrationFileStringBuilderContextType = "footer" | "header";
 
 /**
@@ -88,6 +106,13 @@ export type MigrationFileStringBuilderContextType = "footer" | "header";
  * @returns {any} The value to stringify. (null) and (undefined) will become empty strings.
  */
 export type MigrationFileStringBuilder = (context: IMigrationFileStringBuilderContext) => any;
+
+/**
+ * An action, setting up a custom type parser.
+ *
+ * @param {any} pgModule The `pg` module, which should be used.
+ */
+export type SetTypeParserAction = (pgModule: any) => any;
 
 /**
  * Creates a new migration file.
@@ -315,4 +340,30 @@ ${getStringBuilderValue("footer", footerBuilder)}`;
  */
 export function isPostgreSQLClientLike(obj: unknown): obj is (Client | Pool) {
     return obj instanceof Client || obj instanceof Pool;
+}
+
+/**
+ * Registers `bigint` data type to return as `Number` instead of `String`.
+ *
+ * @param {Nilable<IRegisterBigIntAsNumberOptions>} [options] Custom options.
+ */
+export function registerBigIntAsNumber(options?: Nilable<IRegisterBigIntAsNumberOptions>) {
+    const customPgModule = options?.pgModule;
+
+    let setTypeParser = options?.setTypeParser;
+    if (isNil(options?.setTypeParser)) {
+        // default from known `pg` module
+
+        setTypeParser = (pgMod) => {
+            pgMod.types.setTypeParser(pg.types.builtins.INT8, (value: any) => {
+                return isNil(value) ? null : Number(value);
+            });
+        };
+    }
+
+    if (typeof setTypeParser !== "function") {
+        throw new TypeError("options.setTypeParser must be of type function");
+    }
+
+    setTypeParser(isNil(customPgModule) ? pg : customPgModule);
 }
