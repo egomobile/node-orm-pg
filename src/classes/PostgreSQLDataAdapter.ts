@@ -23,6 +23,11 @@ import type { DebugAction, PostgreSQLClientLike } from "../types";
 import type { DebugActionWithoutSource, Getter } from "../types/internal";
 import { asList, isIterable, isNil, toDebugActionSafe } from "../utils/internal";
 import { isPostgreSQLClientLike } from "../utils";
+import { Counter } from "./pocos/Counter";
+
+interface IBuildFindQueryOptions extends IPostgreSQLFindOptions {
+    shouldNotWrapFields?: boolean;
+}
 
 /**
  * Options for 'find()' method of a 'PostgreSQLDataAdapter' instance.
@@ -141,57 +146,59 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         this.debug = toDebugActionSafe("PostgreSQLDataAdapter", options?.debug);
     }
 
-    /**
-     * @inheritdoc
-     */
-    public async find<T extends any = any>(type: Constructor<T>, options?: IPostgreSQLFindOptions | null): Promise<T[]> {
+    private buildFindQuery<T extends any = any>(
+        type: Constructor<T>,
+        findOptions: IBuildFindQueryOptions | null | undefined
+    ) {
         const table = this.getEntityNameByTypeOrThrow(type);
 
-        const fields = options?.fields;
+        const shouldNotWrapFields = !!findOptions?.shouldNotWrapFields;
+
+        const fields = findOptions?.fields;
         if (!isNil(fields)) {
             if (!Array.isArray(fields)) {
-                throw new TypeError("options.fields must be an array");
+                throw new TypeError("findOptions.fields must be an array");
             }
         }
 
-        const params = options?.params;
+        const params = findOptions?.params;
         if (!isNil(params)) {
             if (!Array.isArray(params)) {
-                throw new TypeError("options.params must be an array");
+                throw new TypeError("findOptions.params must be an array");
             }
         }
 
-        const sort = options?.sort;
+        const sort = findOptions?.sort;
         if (!isNil(sort)) {
             if (typeof sort !== "object") {
-                throw new TypeError("options.sort must be an object");
+                throw new TypeError("findOptions.sort must be an object");
             }
         }
 
-        const where = options?.where;
+        const where = findOptions?.where;
         if (!isNil(where)) {
             if (typeof where !== "string") {
-                throw new TypeError("options.where must be a string");
+                throw new TypeError("findOptions.where must be a string");
             }
         }
 
-        const limit = options?.limit;
+        const limit = findOptions?.limit;
         if (!isNil(limit)) {
             if (typeof limit !== "number") {
-                throw new TypeError("options.limit must be a number");
+                throw new TypeError("findOptions.limit must be a number");
             }
         }
 
-        const offset = options?.offset;
+        const offset = findOptions?.offset;
         if (!isNil(offset)) {
             if (typeof offset !== "number") {
-                throw new TypeError("options.offset must be a number");
+                throw new TypeError("findOptions.offset must be a number");
             }
         }
 
         const projection = fields?.length ?
             fields.map(f => {
-                return `"${String(f)}"`;
+                return shouldNotWrapFields ? `${f}` : `"${f}"`;
             }).join(",") :
             "*";
 
@@ -215,7 +222,43 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         }
         q += ";";
 
-        return this.queryAndMap(type, q, ...(params || []));
+        return {
+            "query": q,
+            "params": params ?? []
+        };
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public async count<T extends any = any>(type: Constructor<T>, options?: IPostgreSQLFindOptions | null): Promise<number> {
+        const {
+            params,
+            query
+        } = this.buildFindQuery(type, {
+            ...(options || {}),
+
+            "shouldNotWrapFields": true,
+            "fields": [
+                "COUNT(*) AS count"
+            ]
+        });
+
+        const counter = (await this.queryAndMap(Counter, query, ...params))[0];
+
+        return Number(counter.count);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public async find<T extends any = any>(type: Constructor<T>, options?: IPostgreSQLFindOptions | null): Promise<T[]> {
+        const {
+            params,
+            query
+        } = this.buildFindQuery(type, options);
+
+        return this.queryAndMap(type, query, ...params);
     }
 
     /**

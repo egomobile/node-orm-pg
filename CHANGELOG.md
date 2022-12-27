@@ -1,5 +1,10 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.13.0
+
+- update to version `^0.10.0` of [node-orm](https://github.com/egomobile/node-orm)
+- code cleanups and improvements
+
 ## 0.12.1
 
 - **BREAKING CHANGE**: update to version `^0.9.0` of [node-orm](https://github.com/egomobile/node-orm)
