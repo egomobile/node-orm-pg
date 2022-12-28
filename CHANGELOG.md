@@ -1,5 +1,9 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.14.0
+
+- improve [count() method](https://egomobile.github.io/node-orm-pg/classes/PostgreSQLDataAdapter.html#count)
+
 ## 0.13.0
 
 - update to version `^0.10.0` of [node-orm](https://github.com/egomobile/node-orm)

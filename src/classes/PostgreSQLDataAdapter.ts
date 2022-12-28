@@ -23,7 +23,6 @@ import type { DebugAction, PostgreSQLClientLike } from "../types";
 import type { DebugActionWithoutSource, Getter } from "../types/internal";
 import { asList, isIterable, isNil, toDebugActionSafe } from "../utils/internal";
 import { isPostgreSQLClientLike } from "../utils";
-import { Counter } from "./pocos/Counter";
 
 interface IBuildFindQueryOptions extends IPostgreSQLFindOptions {
     shouldNotWrapFields?: boolean;
@@ -244,9 +243,9 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             ]
         });
 
-        const counter = (await this.queryAndMap(Counter, query, ...params))[0];
+        const { rows } = await this.query(query, ...params);
 
-        return Number(counter.count);
+        return Number(rows[0].count);
     }
 
     /**
