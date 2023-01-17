@@ -108,6 +108,26 @@ export type PostgreSQLClientConfig = ClientConfig | PoolClient;
  */
 export type PostgreSQLDataAdapterOptionsValue = IPostgreSQLDataAdapterOptions | PostgreSQLClientLike;
 
+type SyncValueTransformer = (options: ITransformValueOptions) => any;
+
+function transformValueUsingDbNull({ direction, value }: ITransformValueOptions): any {
+    if (direction === "from") {
+        return isNil(value) ? NULL : value;
+    }
+    else if (direction === "to") {
+        return isExplicitNull(value) ? null : value;
+    }
+}
+
+function transformValueUsingJSNull({ direction, value }: ITransformValueOptions): any {
+    if (direction === "from") {
+        return isNil(value) ? null : value;
+    }
+    else if (direction === "to") {
+        return value === null || isExplicitNull(value) ? null : value;
+    }
+}
+
 /**
  * A data adapter which is written for PostgreSQL databases.
  */
@@ -246,6 +266,14 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         const { rows } = await this.query(query, ...params);
 
         return Number(rows[0].count);
+    }
+
+    private get defaultValueTransformer(): SyncValueTransformer {
+        if (this.context.noDbNull) {
+            return transformValueUsingJSNull;
+        }
+
+        return transformValueUsingDbNull;
     }
 
     /**
@@ -480,7 +508,9 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         return isSingleEntity ? result[0] : result;
     }
 
-    private async transformValue({ direction, field, type, value }: ITransformValueOptions): Promise<any> {
+    private async transformValue(options: ITransformValueOptions): Promise<any> {
+        const { direction, field, type, value } = options;
+
         const entity = this.getEntityByType(type);
 
         if (entity) {
@@ -490,12 +520,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             }
         }
 
-        if (direction === "from") {
-            return isNil(value) ? NULL : value;
-        }
-        else if (direction === "to") {
-            return isExplicitNull(value) ? null : value;
-        }
+        return this.defaultValueTransformer(options);
     }
 
     /**
