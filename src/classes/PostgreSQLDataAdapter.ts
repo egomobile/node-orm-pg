@@ -309,6 +309,14 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
         return Promise.resolve(this.clientGetter());
     }
 
+    private hasColumnValue(entity: any, columnName: PropertyKey): boolean {
+        if (this.context.noDbNull) {
+            return typeof entity[columnName] !== "undefined";
+        }
+
+        return !isNil(entity[columnName]);
+    }
+
     /**
      * @inheritdoc
      */
@@ -329,8 +337,8 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const table = this.getEntityNameByTypeOrThrow(type);
             const idCols = this.getEntityIdsByType(type);
             const valueCols = Object.keys(entity as any).filter(
-                (columName) => {
-                    return !isNil((entity as any)[columName]);
+                (columnName) => {
+                    return this.hasColumnValue(entity, columnName);
                 },
             );
 
@@ -543,8 +551,9 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const table = this.getEntityNameByTypeOrThrow(type);
             const idCols = this.getEntityIdsByTypeOrThrow(type);
             const valueCols = Object.keys(entity as any).filter(
-                (columName) => {
-                    return !idCols.includes(columName) && !isNil((entity as any)[columName]);
+                (columnName) => {
+                    return !idCols.includes(columnName) &&
+                        this.hasColumnValue(entity, columnName);
                 },
             );
 
