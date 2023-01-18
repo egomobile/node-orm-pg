@@ -505,7 +505,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             // build and run query
             await this.query(
-                `DELETE FROM ${table} WHERE (${where}); `,
+                `DELETE FROM ${table} WHERE (${where});`,
                 ...idValues,
             );
 
@@ -598,7 +598,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
 
             // now build and run query
             await this.query(
-                `UPDATE ${table} SET ${set} WHERE (${where}); `,
+                `UPDATE ${table} SET ${set} WHERE (${where});`,
                 ...[...values, ...idValues],
             );
 
