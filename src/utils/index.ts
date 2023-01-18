@@ -18,7 +18,7 @@ import path from "path";
 import pg from "pg";
 import sanitizeFilename from "sanitize-filename";
 import { pascalCase } from "change-case";
-import type { INewMigrationInfo } from "../types";
+import type { INewMigrationInfo, PostgreSQLClientLike } from "../types";
 import type { Nilable } from "@egomobile/orm/lib/types/internal";
 import { isNil } from "./internal";
 import { Client, Pool } from "pg";
@@ -338,8 +338,9 @@ ${getStringBuilderValue("footer", footerBuilder)}`;
  *
  * @returns {boolean} Is a PostgreSQL client like object or not.
  */
-export function isPostgreSQLClientLike(obj: unknown): obj is (Client | Pool) {
-    return obj instanceof Client || obj instanceof Pool;
+export function isPostgreSQLClientLike(obj: unknown): obj is PostgreSQLClientLike {
+    return obj instanceof Client ||
+        obj instanceof Pool;
 }
 
 /**
@@ -367,3 +368,5 @@ export function registerBigIntAsNumber(options?: Nilable<IRegisterBigIntAsNumber
 
     setTypeParser(isNil(customPgModule) ? pg : customPgModule);
 }
+
+export * from "./withPostgres";

@@ -18,3 +18,5 @@ import type { DebugIcon } from ".";
 export type DebugActionWithoutSource = (message: string, icon: DebugIcon) => any;
 
 export type Getter<T extends any = any> = () => T | Promise<T>;
+
+export type ValueOrGetter<T extends any = any> = T | Getter<T>;
