@@ -36,6 +36,11 @@ export interface IWithPostgresConnection {
      * The list of entity configurations or the function, which returns it.
      */
     entities: ValueOrGetter<EntityConfigurations>;
+    /**
+     * Indicates that the special value `NULL` should not be used
+     * for this entity by default.
+     */
+    noDbNull?: Nilable<boolean>;
 }
 
 /**
@@ -197,7 +202,8 @@ export function createWithPostgres<TConnections extends WithPostgresConnections 
         try {
             const context = await createDataContext({
                 "adapter": new PostgreSQLDataAdapter(client as PostgreSQLClientLike) as IDataAdapter,
-                "entities": await getEntityConfigurations()
+                "entities": await getEntityConfigurations(),
+                "noDbNull": knownConnection.noDbNull
             });
 
             const result = await action(context);

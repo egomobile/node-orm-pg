@@ -1,5 +1,13 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.17.0
+
+- add `noDbNull` setting to [IWithPostgresConnection interface](https://egomobile.github.io/node-orm-pg/interfaces/IWithPostgresConnection.html)
+
+## 0.16.0
+
+- implement `createWithPostgres()` function, which creates a function, that opens known PostgreSQL connection and invoke an action for them
+
 ## 0.15.2
 
 - update to version `^0.11.0` of [node-orm](https://github.com/egomobile/node-orm)
