@@ -4,6 +4,7 @@
 
 - add `noTransactions` flag for `PostgreSQLMigrationContext` based types
 - library requires at least [Node 18](https://nodejs.org/en/blog/release/v18.0.0/) now
+- `npm update`s
 
 ## 0.17.0
 
