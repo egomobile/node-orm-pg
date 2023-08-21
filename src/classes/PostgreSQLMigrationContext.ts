@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import MigrationsEntity, { Migrations } from "./pocos/Migrations";
 import type { Nilable } from "@egomobile/orm/lib/types/internal";
 import type { PostgreSQLDataAdapter, PostgreSQLDataAdapterOptionsValue } from "./PostgreSQLDataAdapter";
@@ -30,6 +30,10 @@ import { isPostgreSQLClientLike } from "../utils";
  * Options for 'down()' method of a 'PostgreSQLMigrationContext' instance.
  */
 export interface IDownOptions {
+    /**
+     * Do not use transaction while migraion by default.
+     */
+    noTransactions?: Nilable<boolean>;
     /**
      * The optional timestamp to downgrade to.
      */
@@ -59,6 +63,10 @@ export interface IPostgreSQLMigrationContextOptions {
      */
     migrations?: Nilable<string | IPostgreSQLMigration[] | Getter<IPostgreSQLMigration[]>>;
     /**
+     * Do not use transaction while migraion by default.
+     */
+    noTransactions?: Nilable<boolean>;
+    /**
      * The name of the migration table. Default: 'migrations'
      */
     table?: Nilable<string>;
@@ -78,6 +86,7 @@ interface IRunMigrationContext {
 interface IRunMigrationsOptions {
     executeMigration: (context: IRunMigrationContext) => Promise<void>;
     migrations: IPostgreSQLMigration[];
+    noTransactions: boolean;
     type: string;
 }
 
@@ -85,6 +94,10 @@ interface IRunMigrationsOptions {
  * Options for 'up()' method of a 'PostgreSQLMigrationContext' instance.
  */
 export interface IUpOptions {
+    /**
+     * Do not use transaction while migraion by default.
+     */
+    noTransactions?: Nilable<boolean>;
     /**
      * The optional timestamp to upgrade to.
      */
@@ -96,6 +109,7 @@ export interface IUpOptions {
  */
 export class PostgreSQLMigrationContext {
     private readonly debug: DebugActionWithoutSource;
+    private readonly noTransactions: boolean;
 
     /**
      * Initializes a new instance of that class.
@@ -108,6 +122,7 @@ export class PostgreSQLMigrationContext {
         }
 
         this.debug = toDebugActionSafe("PostgreSQLMigrationContext", options.debug);
+        this.noTransactions = !!options?.noTransactions;
     }
 
     private async createContext() {
@@ -148,6 +163,8 @@ export class PostgreSQLMigrationContext {
      * @param {Nilable<IDownOptions>} [options] The custom options.
      */
     public async down(options?: Nilable<IDownOptions>) {
+        const shouldNotUseTransactions = options?.noTransactions ?? this.noTransactions;
+
         if (!isNil(options?.timestamp)) {
             if (typeof options!.timestamp !== "number") {
                 throw new TypeError("options.timestamp must be of type number");
@@ -205,7 +222,8 @@ export class PostgreSQLMigrationContext {
                     this.debug(`Skipping downgrade ${migration.name} (${migration.timestamp}) ...`, "ℹ️");
                 }
             },
-            "type": "down"
+            "type": "down",
+            "noTransactions": shouldNotUseTransactions
         });
     }
 
@@ -275,12 +293,20 @@ export class PostgreSQLMigrationContext {
         return loadedMigrations;
     }
 
-    private async runMigrations({ executeMigration, migrations, type }: IRunMigrationsOptions) {
+    private async runMigrations({
+        executeMigration,
+        migrations,
+        noTransactions,
+        type
+    }: IRunMigrationsOptions) {
         const { adapter, context } = await this.createContext();
 
         this.debug(`Will execute migrations of type ${type} ...`, "ℹ️");
 
-        await context.query("START TRANSACTION;");
+        if (!noTransactions) {
+            await context.query("START TRANSACTION;");
+        }
+
         try {
             const finishedMigrations = await context.find(Migrations);
             this.debug(`Found ${finishedMigrations.length} finished migrations in database`, "🐞");
@@ -301,11 +327,17 @@ export class PostgreSQLMigrationContext {
                 });
             }
 
-            await context.query("COMMIT;");
+            if (!noTransactions) {
+                await context.query("COMMIT;");
+            }
+
             this.debug(`All migrations of type ${type} executed`, "✅");
         }
         catch (ex) {
-            await context.query("ROLLBACK;");
+            if (!noTransactions) {
+                await context.query("ROLLBACK;");
+            }
+
             this.debug(`Could not execute migrations of type ${type}: ${ex}`, "❌");
 
             throw ex;
@@ -318,6 +350,8 @@ export class PostgreSQLMigrationContext {
      * @param {Nilable<IUpOptions>} [options] The custom options.
      */
     public async up(options?: Nilable<IUpOptions>) {
+        const shouldNotUseTransactions = options?.noTransactions ?? this.noTransactions;
+
         if (!isNil(options?.timestamp)) {
             if (typeof options!.timestamp !== "number") {
                 throw new TypeError("options.timestamp must be of type number");
@@ -378,7 +412,8 @@ export class PostgreSQLMigrationContext {
                     this.debug(`Upgrade ${migration.name} (${migration.timestamp}) executed`, "✅");
                 }
             },
-            "type": "up"
+            "type": "up",
+            "noTransactions": shouldNotUseTransactions
         });
     }
 }

@@ -1,5 +1,10 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.18.0
+
+- add `noTransactions` flag for `PostgreSQLMigrationContext` based types
+- library requires at least [Node 18](https://nodejs.org/en/blog/release/v18.0.0/) now
+
 ## 0.17.0
 
 - add `noDbNull` setting to [IWithPostgresConnection interface](https://egomobile.github.io/node-orm-pg/interfaces/IWithPostgresConnection.html)
@@ -27,7 +32,7 @@
 ## 0.12.1
 
 - **BREAKING CHANGE**: update to version `^0.9.0` of [node-orm](https://github.com/egomobile/node-orm)
-- library required at least [Node 16](https://nodejs.org/en/blog/release/v16.0.0/) now
+- library requires at least [Node 16](https://nodejs.org/en/blog/release/v16.0.0/) now
 - add `registerBigIntAsNumber()` function, which can help to fix issue, that `bigint` is returned as `string` instead of `number`
 - `npm update`s
 - add missing documentation
@@ -41,7 +46,7 @@
 
 - update to `@egomobile/orm^0.8.0`
 - apply new [linter config](https://github.com/egomobile/eslint-config-ego)
-- library required at least [Node 14](https://nodejs.org/en/blog/release/v14.0.0/) now
+- library requires at least [Node 14](https://nodejs.org/en/blog/release/v14.0.0/) now
 - `npm update`s
 
 ## 0.8.1
