@@ -1,6 +1,11 @@
 # Change Log (@egomobile/orm-pg)
 
-## 0.18.0
+## 0.19.0
+
+- `npm update`(s)
+- (bug-)fixes
+
+## 0.18.1
 
 - add `noTransactions` flag for `PostgreSQLMigrationContext` based types
 - library requires at least [Node 18](https://nodejs.org/en/blog/release/v18.0.0/) now

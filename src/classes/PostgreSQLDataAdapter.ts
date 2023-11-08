@@ -345,6 +345,9 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const values: any[] = [];
             for (const field of valueCols) {
                 const value = (entity as any)[field];
+                if (typeof value === "function") {
+                    continue;  // ignore methods
+                }
 
                 values.push(
                     await this.transformValue({
@@ -564,6 +567,9 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             const addValuesTo = async (fields: string[], vals: any[]) => {
                 for (const field of fields) {
                     const value = (entity as any)[field];
+                    if (typeof value === "function") {
+                        continue;  // ignore methods
+                    }
 
                     vals.push(
                         await this.transformValue({
