@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import type PgCursor from "pg-cursor";
 import { DataAdapterBase, IFindOneOptions, IFindOptions, NULL } from "@egomobile/orm";
 import type { Constructor, List, Nilable } from "@egomobile/orm/lib/types/internal";
 import { ClientConfig, Pool, PoolClient, PoolConfig, QueryResult } from "pg";
@@ -77,9 +78,19 @@ export interface IPostgreSQLFindOneOptions extends IFindOneOptions {
  */
 export interface IPostgreSQLDataAdapterOptions {
     /**
+     * Custom chunk size for cursor operations.
+     *
+     * @default `100`
+     */
+    chunkSize?: Nilable<number>;
+    /**
      * The underlying client or a function, which returns it.
      */
     client?: Nilable<PostgreSQLClientLike | Getter<PostgreSQLClientLike> | PostgreSQLClientConfig>;
+    /**
+     * A custom class of a `pg-module` compatible class to do cursor operations.
+     */
+    cursorClass?: any;
     /**
      * The optional debug action / handler.
      */
@@ -132,8 +143,10 @@ function transformValueUsingJSNull({ direction, value }: ITransformValueOptions)
  * A data adapter which is written for PostgreSQL databases.
  */
 export class PostgreSQLDataAdapter extends DataAdapterBase {
-    private readonly clientGetter: Getter<PostgreSQLClientLike>;
-    private readonly debug: DebugActionWithoutSource;
+    readonly #chunkSize: number;
+    readonly #clientGetter: Getter<PostgreSQLClientLike>;
+    readonly #cursorClass: any;
+    readonly #debug: DebugActionWithoutSource;
 
     /**
      * Initializes a new instance of that class.
@@ -159,10 +172,20 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
             }
         }
 
-        this.clientGetter = toClientGetter({
+        if (!isNil(options?.chunkSize)) {
+            if (typeof options?.chunkSize !== "number") {
+                throw new TypeError("options.chunkSize must be of type number");
+            }
+        }
+
+        this.#chunkSize = typeof options?.chunkSize === "number" ?
+            options.chunkSize :
+            100;
+        this.#clientGetter = toClientGetter({
             "value": options?.client
         });
-        this.debug = toDebugActionSafe("PostgreSQLDataAdapter", options?.debug);
+        this.#cursorClass = options?.cursorClass;
+        this.#debug = toDebugActionSafe("PostgreSQLDataAdapter", options?.debug);
     }
 
     private buildFindQuery<T extends any = any>(
@@ -306,7 +329,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      * @returns {Promise<PostgreSQLClientLike>} The promise with the client.
      */
     public getClient(): Promise<PostgreSQLClientLike> {
-        return Promise.resolve(this.clientGetter());
+        return Promise.resolve(this.#clientGetter());
     }
 
     private hasColumnValue(entity: any, columnName: PropertyKey): boolean {
@@ -434,7 +457,7 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
      * @returns {Promise<QueryResult<any>>} The promise with the result.
      */
     public async query(sql: string, ...values: any[]): Promise<QueryResult<any>> {
-        this.debug(`SQL QUERY: ${sql}`, "🐞");
+        this.#debug(`SQL QUERY: ${sql}`, "🐞");
 
         const client = await this.getClient();
 
@@ -444,8 +467,45 @@ export class PostgreSQLDataAdapter extends DataAdapterBase {
     /**
      * @inheritdoc
      */
+    public async *queryAndIterate<T extends any = any>(type: Constructor<T>, sql: string, ...values: any[]): AsyncGenerator<T> {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        let CursorClass: any;
+        if (this.#cursorClass) {
+            CursorClass = this.#cursorClass.default ??
+                this.#cursorClass;
+        }
+        else {
+            CursorClass = require("pg-cursor");
+        }
+
+        const client = await this.getClient();
+        const cursor: PgCursor = await client.query(new CursorClass(sql, values));
+
+        try {
+            do {
+                const rows = await cursor.read(this.#chunkSize);
+                if (rows.length === 0) {
+                    break;
+                }
+
+                for (const row of rows) {
+                    const newEntity = new type();
+                    await this.mapEntityWithRow(newEntity, row);
+
+                    yield newEntity;
+                }
+            } while (true);
+        }
+        finally {
+            await cursor.close();
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
     public async queryAndMap<T extends any = any>(type: Constructor<T>, sql: string, ...values: any[]): Promise<T[]> {
-        this.debug(`SQL QUERY AND MAP: ${sql}`, "🐞");
+        this.#debug(`SQL QUERY AND MAP: ${sql}`, "🐞");
 
         const client = await this.getClient();
         const sqlResult = await client.query(sql, values);

@@ -25,6 +25,12 @@ import { PostgreSQLClientLike } from "../types";
  */
 export interface IWithPostgresConnection {
     /**
+     * Custom chunk size for cursor operations.
+     *
+     * @default `100`
+     */
+    chunkSize?: Nilable<number>;
+    /**
      * The client configuration for `pg` module or the function, which returns it.
      */
     client: ValueOrGetter<Nilable<string | pg.ClientConfig>>;
@@ -32,6 +38,10 @@ export interface IWithPostgresConnection {
      * The custom client class. Default is `pg.Client`.
      */
     clientClass?: Nilable<Constructor<any>>;
+    /**
+     * A custom class of a `pg-module` compatible class to do cursor operations.
+     */
+    cursorClass?: any;
     /**
      * The list of entity configurations or the function, which returns it.
      */
@@ -152,8 +162,10 @@ export function createWithPostgres<TConnections extends WithPostgresConnections 
         }
 
         const {
+            "chunkSize": customChunkSize,
             "client": clientOrGetter,
             "clientClass": customClientClass,
+            "cursorClass": customCursorClass,
             "entities": entityOrProvider
         } = knownConnection;
 
@@ -201,7 +213,11 @@ export function createWithPostgres<TConnections extends WithPostgresConnections 
 
         try {
             const context = await createDataContext({
-                "adapter": new PostgreSQLDataAdapter(client as PostgreSQLClientLike) as IDataAdapter,
+                "adapter": new PostgreSQLDataAdapter({
+                    "chunkSize": customChunkSize,
+                    "client": client as PostgreSQLClientLike,
+                    "cursorClass": customCursorClass
+                }) as IDataAdapter,
                 "entities": await getEntityConfigurations(),
                 "noDbNull": knownConnection.noDbNull
             });

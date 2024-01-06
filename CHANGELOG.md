@@ -1,5 +1,11 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.20.0
+
+- update to version `^0.14.0` of [node-orm](https://github.com/egomobile/node-orm)
+- add cursor support, using [pg-cursor](https://www.npmjs.com/package/pg-cursor) by default
+- `npm update`(s)
+
 ## 0.19.0
 
 - `npm update`(s)
