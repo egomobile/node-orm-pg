@@ -58,6 +58,12 @@ export interface IWithPostgresConnection {
  */
 export interface IWithPostgresOptions {
     /**
+     * Custom chunk size for cursor operations.
+     *
+     * @default `100`
+     */
+    chunkSize?: Nilable<number>;
+    /**
      * Run action in transaction or not.
      */
     withTransaction?: Nilable<boolean>;
@@ -193,6 +199,7 @@ export function createWithPostgres<TConnections extends WithPostgresConnections 
             };
         }
 
+        const adapterChunkSize = options?.chunkSize ?? customChunkSize;
         const shouldUseRunInTransaction = !!options?.withTransaction;
 
         let clientClass: Constructor<any> = pg.Client;
@@ -214,7 +221,7 @@ export function createWithPostgres<TConnections extends WithPostgresConnections 
         try {
             const context = await createDataContext({
                 "adapter": new PostgreSQLDataAdapter({
-                    "chunkSize": customChunkSize,
+                    "chunkSize": adapterChunkSize,
                     "client": client as PostgreSQLClientLike,
                     "cursorClass": customCursorClass
                 }) as IDataAdapter,
