@@ -1,5 +1,11 @@
 # Change Log (@egomobile/orm-pg)
 
+## 0.22.0
+
+- add `updateComments()` function
+- update to version `^0.15.0` of [node-orm](https://github.com/egomobile/node-orm)
+- `npm update`(s)
+
 ## 0.21.0
 
 - add `chunkSize` to [IWithPostgresOptions interface](https://egomobile.github.io/node-orm-pg/interfaces/IWithPostgresOptions.html)

@@ -369,4 +369,5 @@ export function registerBigIntAsNumber(options?: Nilable<IRegisterBigIntAsNumber
     setTypeParser(isNil(customPgModule) ? pg : customPgModule);
 }
 
+export * from "./updateComments";
 export * from "./withPostgres";

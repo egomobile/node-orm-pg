@@ -31,6 +31,11 @@ export function asList<T extends any = any>(
     return [itemOrList];
 }
 
+export function escapeStringForQuery(val: any): string {
+    return String(val ?? "")
+        .replace(/'/g, "''");
+}
+
 export function isIterable(obj: any): obj is List<any> {
     if (obj) {
         return typeof obj[Symbol.iterator] === "function";
