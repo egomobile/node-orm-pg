@@ -68,10 +68,10 @@ export async function updateComments(options: IUpdateCommentsOptions) {
                 if (tableColumnComment !== "") {
                     const escapedTableColumnComment = escapeStringForQuery(tableColumnComment);
 
-                    updateTableColumnCommentQuery = `COMMENT ON TABLE ${fullColumnName} IS '${escapedTableColumnComment}';`;
+                    updateTableColumnCommentQuery = `COMMENT ON COLUMN ${fullColumnName} IS '${escapedTableColumnComment}';`;
                 }
                 else {
-                    updateTableColumnCommentQuery = `COMMENT ON TABLE ${fullColumnName} IS NULL;`;
+                    updateTableColumnCommentQuery = `COMMENT ON COLUMN ${fullColumnName} IS NULL;`;
                 }
 
                 await context.query(updateTableColumnCommentQuery);

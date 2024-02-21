@@ -1,6 +1,6 @@
 # Change Log (@egomobile/orm-pg)
 
-## 0.22.0
+## 0.22.1
 
 - add `updateComments()` function
 - update to version `^0.15.0` of [node-orm](https://github.com/egomobile/node-orm)
